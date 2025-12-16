@@ -1,0 +1,88 @@
+# =========================
+# Environment & Secrets
+# =========================
+.env
+.env.*
+*.env
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# =========================
+# Django
+# =========================
+db.sqlite3
+media/
+staticfiles/
+local_settings.py
+
+# Django migrations (keep __init__.py)
+*/migrations/*
+!*/migrations/__init__.py
+
+# =========================
+# Virtual Environments
+# =========================
+venv/
+env/
+ENV/
+.venv/
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# ML / Data Science
+# =========================
+data/
+datasets/
+*.csv
+*.xlsx
+*.joblib
+*.pkl
+models/
+checkpoints/
+
+# =========================
+# Node / React (future frontend)
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+
+# =========================
+# Coverage / Testing
+# =========================
+.coverage
+htmlcov/
+.pytest_cache/
+
+# =========================
+# Docker (if added later)
+# =========================
+docker-compose.override.yml

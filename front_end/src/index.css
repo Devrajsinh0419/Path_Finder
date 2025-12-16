@@ -1,0 +1,245 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* PathFinder Night Sky Theme */
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 222 47% 18%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 222 30% 20%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 168 84% 58%;
+    --accent-foreground: 222 47% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 30% 25%;
+    --input: 217 91% 35%;
+    --ring: 168 84% 58%;
+
+    --radius: 0.75rem;
+
+    /* Custom colors */
+    --night-sky-start: 222 47% 6%;
+    --night-sky-end: 222 47% 15%;
+    --glass: 222 47% 15%;
+    --glass-border: 217 30% 30%;
+    --teal: 168 84% 58%;
+    --teal-muted: 168 50% 40%;
+    --navy-dark: 222 47% 10%;
+    --navy-light: 222 40% 25%;
+
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 168 84% 58%;
+    --sidebar-accent-foreground: 222 47% 8%;
+    --sidebar-border: 217 30% 25%;
+    --sidebar-ring: 168 84% 58%;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 12%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 12%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 222 47% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 30% 20%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 168 84% 58%;
+    --accent-foreground: 222 47% 8%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 30% 25%;
+    --input: 217 91% 35%;
+    --ring: 168 84% 58%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-poppins antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: 'Orbitron', sans-serif;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-glass/40 backdrop-blur-xl border border-glass-border/50 rounded-2xl;
+  }
+
+  .glass-card-strong {
+    @apply bg-glass/60 backdrop-blur-2xl border border-glass-border/60 rounded-2xl;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent;
+  }
+
+  .btn-glow {
+    @apply relative overflow-hidden transition-all duration-300;
+  }
+
+  .btn-glow::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-accent/20 to-primary/20 opacity-0 transition-opacity duration-300;
+  }
+
+  .btn-glow:hover::before {
+    @apply opacity-100;
+  }
+
+  .input-field {
+    @apply bg-input/80 border-none text-foreground placeholder:text-muted-foreground/60 rounded-xl px-4 py-3 focus:ring-2 focus:ring-accent/50 transition-all duration-300;
+  }
+
+  .nav-link {
+    @apply relative text-foreground/80 hover:text-foreground transition-colors duration-300;
+  }
+
+  .nav-link::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-accent transition-all duration-300;
+  }
+
+  .nav-link:hover::after {
+    @apply w-full;
+  }
+
+  .feature-card {
+    @apply bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 transition-all duration-500 hover:scale-105 hover:border-accent/50 hover:shadow-lg hover:shadow-accent/10;
+  }
+
+  .info-card {
+    @apply bg-accent/10 border border-accent/30 rounded-xl p-4 backdrop-blur-sm;
+  }
+
+  .star {
+    @apply absolute rounded-full bg-foreground/80 animate-pulse;
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-twinkle {
+    animation: twinkle 3s ease-in-out infinite;
+  }
+
+  .animate-shooting-star {
+    animation: shooting-star 3s linear infinite;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.5s ease-out forwards;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+
+  .animation-delay-800 {
+    animation-delay: 800ms;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes shooting-star {
+  0% {
+    transform: translateX(0) translateY(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(300px) translateY(300px);
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
