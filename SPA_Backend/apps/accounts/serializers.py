@@ -26,7 +26,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            username=validated_data['email'],
             email=validated_data['email'],
             password=validated_data['password'],
             role=validated_data.get('role', 'student')
@@ -45,7 +44,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
 
         # Add custom claims to the response
-        data.update({'username': self.user.username})
+        data.update({'email': self.user.email})
         data.update({'role': self.user.role})
 
         return data
