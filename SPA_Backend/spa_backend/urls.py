@@ -26,6 +26,7 @@ urlpatterns = [
     # Auth APIs
     path('api/auth/', include('apps.accounts.urls')),
     path('api/auth/login/', csrf_exempt(MyTokenObtainPairView.as_view()), name='token_obtain_pair'),
+    path('api/auth/signup/', csrf_exempt(MyTokenObtainPairView.as_view()), name='token_obtain_pair'),
     path('api/auth/refresh/', csrf_exempt(TokenRefreshView.as_view()), name='token_refresh'),
     path('api/academics/', include('apps.academics.urls')),
     path('api/analysis/', include('apps.analysis.urls')),
