@@ -40,7 +40,7 @@ const Signup = () => {
         password2: confirmPassword,
         role: 'student',
       });
-      navigate('/login');
+      navigate('/dashboard');
     } catch (err: any) {
       if (err.response && err.response.data) {
         const errorData = err.response.data;
