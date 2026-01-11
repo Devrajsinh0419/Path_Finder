@@ -43,7 +43,7 @@ const Signup = () => {
       // Save the token and user data to localStorage
       localStorage.setItem('token', response.data.access);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      navigate('/dashboard');
+      navigate('/complete-profile');
     } catch (err: any) {
       if (err.response && err.response.data) {
         const errorData = err.response.data;
