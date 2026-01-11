@@ -9,6 +9,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 class RegisterView(CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+    authentication_classes = []
     
     def dispatch(self, request, *args, **kwargs):
         # CSRF exempt for API endpoints
