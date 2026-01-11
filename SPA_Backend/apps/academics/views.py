@@ -8,28 +8,30 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework import status
 
-from .services.pdf_extractor import extract_marks_from_pdf
-from .services.marks_ingestor import ingest_marks
+from accounts.permissions import IsProfileCompleted
+from .services.pdf_extractor import extract_grades_from_pdf
+from .services.marks_ingestor import ingest_grades
 
 
 class SemesterResultCreateView(generics.CreateAPIView):
     serializer_class = SemesterResultSerializer
     permission_classes = [IsAuthenticated]
 
-
     def perform_create(self, serializer):
         serializer.save(student=self.request.user)
+
 
 class SemesterResultListView(generics.ListAPIView):
     serializer_class = SemesterResultSerializer
     permission_classes = [IsAuthenticated]
 
-
     def get_queryset(self):
         return SemesterResult.objects.filter(student=self.request.user)
 
+
 class UploadResultPDFView(APIView):
     parser_classes = [MultiPartParser]
+    permission_classes = [IsAuthenticated, IsProfileCompleted]
 
     def post(self, request):
         pdf = request.FILES.get("file")
@@ -41,11 +43,11 @@ class UploadResultPDFView(APIView):
             )
 
         try:
-            extracted_data = extract_marks_from_pdf(pdf)
-            ingest_marks(request.user, extracted_data)
+            extracted_data = extract_grades_from_pdf(pdf)
+            ingest_grades(request.user, extracted_data)
 
             return Response(
-                {"message": "Marks extracted and saved successfully"},
+                {"message": "Grade sheet processed successfully"},
                 status=status.HTTP_201_CREATED
             )
 
