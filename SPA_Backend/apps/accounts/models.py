@@ -4,7 +4,7 @@ from django.contrib.auth.models import (
     PermissionsMixin,
     BaseUserManager
 )
-
+from django.conf import settings
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -55,3 +55,27 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.email} ({self.role})"
+
+User = settings.AUTH_USER_MODEL
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="profile"
+    )
+
+    full_name = models.CharField(max_length=150)
+    enrollment_no = models.CharField(max_length=50, unique=True)
+    college_name = models.CharField(max_length=200)
+
+    current_semester = models.IntegerField(
+        choices=[(i, i) for i in range(1, 7)]
+    )
+
+    is_completed = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.full_name} ({self.enrollment_no})"

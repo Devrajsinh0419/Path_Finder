@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from .models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from .models import UserProfile
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -63,3 +64,21 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         return data
 
+
+class ProfileCompletionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = [
+            "full_name",
+            "enrollment_no",
+            "college_name",
+            "current_semester",
+        ]
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.is_completed = True
+        instance.save()
+        return instance

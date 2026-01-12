@@ -33,3 +33,21 @@ class SemesterResult(models.Model):
 
     def __str__(self):
         return f"{self.student} | Sem {self.semester} | {self.subject}"
+    
+class Subject(models.Model):
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=150)
+    semester = models.IntegerField()
+
+    category = models.CharField(
+        max_length=20,
+        choices=[
+            ("CORE", "Core"),
+            ("APPLIED", "Applied"),
+            ("LAB", "Lab"),
+            ("PROJECT", "Project"),
+            ("SOFT", "Soft Skill"),
+        ]
+    )
+
+    weightage = models.FloatField()  # academic importance
