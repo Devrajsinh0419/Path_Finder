@@ -16,18 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework_simplejwt.views import TokenRefreshView
-from apps.accounts.views import MyTokenObtainPairView
+from apps.accounts.views import MyTokenObtainPairView, RegisterView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
     # Auth APIs
-    path('api/auth/', include('apps.accounts.urls')),
-    path('api/auth/login/', csrf_exempt(MyTokenObtainPairView.as_view()), name='token_obtain_pair'),
-    path('api/auth/signup/', csrf_exempt(MyTokenObtainPairView.as_view()), name='token_obtain_pair'),
-    path('api/auth/refresh/', csrf_exempt(TokenRefreshView.as_view()), name='token_refresh'),
+    path('api/auth/login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/auth/register/', RegisterView.as_view(), name='register'),
+    path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/academics/', include('apps.academics.urls')),
     path('api/analysis/', include('apps.analysis.urls')),
     path('api/career/', include('apps.ml_engine.urls')),
