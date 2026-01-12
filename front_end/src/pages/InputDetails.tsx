@@ -1,5 +1,7 @@
+import { useToast } from "@/components/ui/use-toast";
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
@@ -9,23 +11,41 @@ import Stars from '@/components/Stars';
 import heroBg from '@/assets/hero-bg.jpg';
 
 const InputDetails = () => {
-  const navigate = useNavigate();
+  const { toast } = useToast()
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    enrollmentNo: '',
-    semester: '',
-    year: '',
-    branch: '',
-    skills: '',
+    firstName: "",
+    lastName: "",
+    enrollmentNo: "",
+    semester: "",
+    year: "",
+    branch: "",
+    skills: "",
     selfRating: [0],
-  });
+  })
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Form Data:', formData);
-    navigate('/dashboard');
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      await api.post("/academics/student-profile/", formData)
+      toast({
+        title: "Profile Submitted",
+        description: "Your profile has been successfully submitted.",
+      })
+      navigate("/dashboard")
+    } catch (error) {
+      toast({
+        title: "Submission Failed",
+        description: "There was an error submitting your profile.",
+        variant: "destructive",
+      })
+      console.error("Error submitting profile:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div 
@@ -185,8 +205,8 @@ const InputDetails = () => {
 
               {/* Submit Button */}
               <div className="flex justify-end pt-4">
-                <Button type="submit" variant="accent" size="lg">
-                  Enter Marks
+                <Button type="submit" variant="accent" size="lg" disabled={loading}>
+                  {loading ? 'Submitting...' : 'Enter Marks'}
                 </Button>
               </div>
             </form>
