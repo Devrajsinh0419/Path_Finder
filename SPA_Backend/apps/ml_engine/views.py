@@ -7,8 +7,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from accounts.permissions import IsProfileCompleted
-from academics.models import StudentMark
+from apps.accounts.permissions import IsProfileCompleted
+from apps.academics.models import SemesterResult
 from .feature_builder import build_feature_vector
 from .predictor import predict_domain
 

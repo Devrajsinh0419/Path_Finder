@@ -6,4 +6,5 @@ from .views import CompleteProfileView
 urlpatterns = [
     path('register/', csrf_exempt(RegisterView.as_view()), name='register'),
     path("complete-profile/", CompleteProfileView.as_view()),
+    path("StudentProfile/", CompleteProfileView.as_view()),
 ]
