@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SemesterResultCreateView, SemesterResultListView
+from .views import SemesterResultCreateView, SemesterResultListView, StudentProfileView, UploadResultPDFView
 
 
 urlpatterns = [
