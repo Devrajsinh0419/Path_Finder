@@ -56,7 +56,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f"{self.email} ({self.role})"
 
-User = settings.AUTH_USER_MODEL
+# User = settings.AUTH_USER_MODEL
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
