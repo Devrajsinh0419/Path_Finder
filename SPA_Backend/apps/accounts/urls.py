@@ -1,7 +1,7 @@
 from django.urls import path
+from django.contrib import admin
 from django.views.decorators.csrf import csrf_exempt
-from .views import RegisterView
-from .views import CompleteProfileView
+from .views import RegisterView, CompleteProfileView
 
 urlpatterns = [
     path('register/', csrf_exempt(RegisterView.as_view()), name='register'),

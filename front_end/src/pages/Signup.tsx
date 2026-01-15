@@ -7,6 +7,7 @@ import { Sparkles } from 'lucide-react';
 import Stars from '@/components/Stars';
 import heroBg from '@/assets/hero-bg.jpg';
 import api from '@/lib/api';
+import axios from 'axios';
 
 const Signup = () => {
   const [firstName, setFirstName] = useState('');
@@ -19,53 +20,81 @@ const Signup = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!agreeTerms) {
-      setError('You must agree to the terms and conditions.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      const response = await api.post('/auth/register/', {
-        first_name: firstName,
-        last_name: lastName,
-        email,  
-        password,
-        password2: confirmPassword,
-        role: 'student',
-      });
-      // Save the token and user data to localStorage
-      localStorage.setItem('token', response.data.access);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      navigate('/complete-profile');
-    } catch (err: any) {
-      if (err.response && err.response.data) {
-        const errorData = err.response.data;
-        if (errorData.email) {
-          setError(`Email: ${errorData.email[0]}`);
-        } else if (errorData.password) {
-          setError(`Password: ${errorData.password[0]}`);
-        } else if (errorData.first_name) {
-          setError(`First Name: ${errorData.first_name[0]}`);
-        } else if (errorData.last_name) {
-          setError(`Last Name: ${errorData.last_name[0]}`);
-        } else {
-          setError('Failed to sign up. Please try again.');
-        }
-      } else {
-        setError('Failed to sign up. Please try again.');
-      }
-      console.error('Signup failed:', err);
-    } finally {
-      setLoading(false);
-    }
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!agreeTerms) {
+    setError('You must agree to the terms and conditions.');
+    return;
+  }
+  if (password !== confirmPassword) {
+    setError('Passwords do not match.');
+    return;
+  }
+  
+  const payload = {
+    first_name: firstName,
+    last_name: lastName,
+    email,  
+    password,
+    password2: confirmPassword,
+    role: 'student',
   };
+  
+  console.log('Payload being sent:', payload);
+  
+  setLoading(true);
+  setError('');
+  
+  try {
+    // Use plain axios instead of api instance
+    const response = await axios.post(
+      'http://localhost:8000/api/auth/register/',
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    console.log('Registration response:', response.data);
+    
+    // Save tokens
+    if (response.data.tokens) {
+      localStorage.setItem('access_token', response.data.tokens.access);
+      localStorage.setItem('refresh_token', response.data.tokens.refresh);
+    }
+    
+    // Save user data
+    if (response.data.user) {
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    
+    navigate('/complete-profile');
+  } catch (err: any) {
+    console.error('Signup failed:', err);
+    console.error('Response data:', err.response?.data);
+    
+    if (err.response?.data) {
+      const errorData = err.response.data;
+      const errorMessages = Object.entries(errorData)
+        .map(([key, value]: [string, any]) => {
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(', ')}`;
+          }
+          return `${key}: ${value}`;
+        })
+        .join('\n');
+      
+      setError(errorMessages);
+    } else {
+      setError('Failed to sign up. Please try again.');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex">
