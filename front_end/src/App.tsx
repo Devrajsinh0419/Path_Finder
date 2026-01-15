@@ -6,7 +6,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import InputDetails from "./pages/InputDetails";
-import Dashboard from "./pages/Dashboard";
+import { Dashboard } from './pages/Dashboard';
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { CompleteProfile } from "./pages/CompleteProfile";
