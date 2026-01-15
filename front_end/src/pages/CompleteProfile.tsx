@@ -48,7 +48,7 @@ export function CompleteProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await api.get("/academics/student-profile/");
+        const response = await api.get("/accounts/complete-profile/");
         if (response.data) {
           form.reset({
             ...response.data,
@@ -66,7 +66,7 @@ export function CompleteProfile() {
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setLoading(true);
     try {
-      await api.post("/academics/student-profile/", {
+      await api.post("/accounts/complete-profile/", {
         ...data,
         current_semester: parseInt(data.current_semester),
       });

@@ -1,8 +1,13 @@
 from django.shortcuts import render
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import SemesterResult
 from .serializers import SemesterResultSerializer
+from .models import StudentProfile
+from .serializers import StudentProfileSerializer
 
 
 class SemesterResultCreateView(generics.CreateAPIView):
@@ -20,17 +25,31 @@ class SemesterResultListView(generics.ListAPIView):
     def get_queryset(self):
         return SemesterResult.objects.filter(student=self.request.user)
 
-class StudentProfileView(generics.RetrieveAPIView):
-    serializer_class = SemesterResultSerializer
+class StudentProfileView(APIView):
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
-        profile_data = {
-            "first_name": request.user.first_name,
-            "last_name": request.user.last_name,
-            "email": request.user.email,
-        }
-        return Response(profile_data, status=status.HTTP_200_OK)
+    def get(self, request):
+        profile = StudentProfile.objects.filter(user=request.user).first()
+        if not profile:
+            return Response({}, status=status.HTTP_200_OK)
+
+        serializer = StudentProfileSerializer(profile)
+        return Response(serializer.data)
+
+    def post(self, request):
+        profile = StudentProfile.objects.filter(user=request.user).first()
+
+        serializer = StudentProfileSerializer(
+            profile,    
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class UploadResultPDFView(generics.CreateAPIView):
     serializer_class = SemesterResultSerializer
