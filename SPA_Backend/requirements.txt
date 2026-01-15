@@ -18,3 +18,5 @@ scikit-learn
 numpy
 pandas
 joblib
+
+PyPDF2==3.0.1
