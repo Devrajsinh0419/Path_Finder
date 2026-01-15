@@ -73,7 +73,7 @@ export function CompleteProfile() {
       toast({
         title: "Profile completed successfully!",
       });
-      navigate("/UploadResults");
+      navigate('/upload-results');
     } catch (error) {
       console.error(error);
       toast({

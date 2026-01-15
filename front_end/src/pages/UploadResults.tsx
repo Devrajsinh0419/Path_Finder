@@ -52,6 +52,7 @@ export function UploadResults() {
         },
       });
 
+      console.log('Upload response:', response.data); // Debug log
       setResults(response.data);
       
       toast({
@@ -136,14 +137,16 @@ export function UploadResults() {
                 </div>
                 
                 <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">Best Match</p>
-                    <p className="text-2xl font-bold text-accent">
-                      {results.recommendation.recommendation}
-                    </p>
-                  </div>
+                  {results.recommendation?.recommendation && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Best Match</p>
+                      <p className="text-2xl font-bold text-accent">
+                        {results.recommendation.recommendation}
+                      </p>
+                    </div>
+                  )}
 
-                  {results.recommendation.top_domains.length > 0 && (
+                  {results.recommendation?.top_domains && results.recommendation.top_domains.length > 0 && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-3">Your Strengths</p>
                       <div className="space-y-2">
@@ -156,13 +159,31 @@ export function UploadResults() {
                       </div>
                     </div>
                   )}
+
+                  {(!results.recommendation?.top_domains || results.recommendation.top_domains.length === 0) && (
+                    <p className="text-muted-foreground text-sm">
+                      We're still analyzing your performance to provide personalized recommendations.
+                    </p>
+                  )}
                 </div>
               </div>
 
-              <div className="bg-card rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-2">Subjects Analyzed</p>
-                <p className="text-2xl font-bold">{results.subjects.length} subjects</p>
-              </div>
+              {results.subjects && results.subjects.length > 0 && (
+                <div className="bg-card rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground mb-2">Subjects Analyzed</p>
+                  <p className="text-2xl font-bold">{results.subjects.length} subjects</p>
+                  
+                  {/* Show subject details */}
+                  <div className="mt-4 space-y-2 max-h-64 overflow-y-auto">
+                    {results.subjects.map((subject: any, index: number) => (
+                      <div key={index} className="flex justify-between text-sm border-b border-border/30 pb-2">
+                        <span className="text-muted-foreground">{subject.subject}</span>
+                        <span className="font-medium">{subject.grade} ({subject.marks})</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <Button
                 onClick={handleContinue}
