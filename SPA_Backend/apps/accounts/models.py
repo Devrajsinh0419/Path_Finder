@@ -10,7 +10,6 @@ class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError("The Email field must be set")
-
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -21,31 +20,24 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
-
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True.")
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
-
         return self.create_user(email, password, **extra_fields)
-
 
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
         ('student', 'Student'),
         ('admin', 'Admin'),
     )
-
     email = models.EmailField(unique=True)
-    first_name = models.CharField(max_length=30, blank=True)
-    last_name = models.CharField(max_length=30, blank=True)
+    first_name = models.CharField(max_length=30, blank=True, null=True)
+    last_name = models.CharField(max_length=30, blank=True, null=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
-
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-
     objects = UserManager()
-
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
@@ -56,25 +48,21 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f"{self.email} ({self.role})"
 
-# User = settings.AUTH_USER_MODEL
-
 class UserProfile(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
         related_name="profile"
     )
-
-    full_name = models.CharField(max_length=150)
-    enrollment_no = models.CharField(max_length=50, unique=True)
-    college_name = models.CharField(max_length=200)
-
+    full_name = models.CharField(max_length=150, blank=True, default='')  # Added blank=True and default
+    enrollment_no = models.CharField(max_length=50, unique=True, blank=True, null=True)  # Added blank=True
+    college_name = models.CharField(max_length=200, blank=True, default='')  # Added blank=True and default
     current_semester = models.IntegerField(
-        choices=[(i, i) for i in range(1, 7)]
+        choices=[(i, i) for i in range(1, 7)],  
+        blank=True,
+        null=True
     )
-
     is_completed = models.BooleanField(default=False)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
