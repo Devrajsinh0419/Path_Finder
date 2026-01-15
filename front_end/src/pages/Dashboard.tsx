@@ -177,7 +177,7 @@ export function Dashboard() {
             ))}
           </div>
           <Button
-            onClick={() => navigate('/roadmap')}
+            onClick={() => navigate('/career-domains')}
             variant="accent"
             className="mt-4"
           >
