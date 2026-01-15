@@ -11,6 +11,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { CompleteProfile } from "./pages/CompleteProfile";
 import { UploadResults } from './pages/UploadResults';
+import { CareerDomains } from './pages/CareerDomains';
 
 const App = () => (
   <TooltipProvider>
@@ -26,6 +27,7 @@ const App = () => (
         <Route path="/profile" element={<Profile />} />
         <Route path="/complete-profile" element={<CompleteProfile />} />
         <Route path="/upload-results" element={<UploadResults />} />
+        <Route path="/career-domains" element={<CareerDomains />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
