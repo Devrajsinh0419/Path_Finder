@@ -57,103 +57,120 @@ class UploadResultPDFView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        if 'pdf_file' not in request.FILES:
+        # Get all uploaded PDFs (sem1 to sem6)
+        uploaded_semesters = []
+        total_subjects = 0
+        
+        for sem_num in range(1, 7):
+            field_name = f'semester_{sem_num}'
+            if field_name in request.FILES:
+                pdf_file = request.FILES[field_name]
+                
+                # Validate file type
+                if not pdf_file.name.endswith('.pdf'):
+                    return Response(
+                        {"error": f"File for semester {sem_num} must be a PDF"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                try:
+                    # Extract and parse PDF
+                    pdf_text = self.extract_text_from_pdf(pdf_file)
+                    parsed_data = self.parse_grade_sheet(pdf_text, sem_num)
+                    
+                    if parsed_data:
+                        # Save results
+                        saved = self.save_results(request.user, parsed_data, sem_num)
+                        uploaded_semesters.append({
+                            'semester': sem_num,
+                            'subjects_count': len(saved),
+                            'subjects': saved
+                        })
+                        total_subjects += len(saved)
+                    
+                except Exception as e:
+                    print(f"Error processing semester {sem_num}: {str(e)}")
+                    return Response(
+                        {"error": f"Failed to process semester {sem_num}: {str(e)}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+        
+        if not uploaded_semesters:
             return Response(
-                {"error": "No PDF file provided"},
+                {"error": "No valid PDF files uploaded"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        pdf_file = request.FILES['pdf_file']
-
-        if not pdf_file.name.endswith('.pdf'):
-            return Response(
-                {"error": "Only PDF files are allowed"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            pdf_text = self.extract_text_from_pdf(pdf_file)
-
-            parsed_data = self.parse_grade_sheet(pdf_text)
-
-            if not parsed_data:
-                return Response(
-                    {"error": "No subjects found in PDF"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            saved_results = self.save_results(request.user, parsed_data)
-            domain_recommendation = self.analyze_and_recommend(saved_results)
-
-            return Response({
-                "message": "PDF processed successfully",
-                "subjects": saved_results,
-                "recommendation": domain_recommendation
-            }, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        
+        # Analyze all uploaded data
+        all_results = SemesterResult.objects.filter(student=request.user)
+        domain_recommendation = self.analyze_and_recommend(all_results)
+        
+        return Response({
+            "message": f"Successfully processed {len(uploaded_semesters)} semester(s)",
+            "uploaded_semesters": uploaded_semesters,
+            "total_subjects": total_subjects,
+            "recommendation": domain_recommendation
+        }, status=status.HTTP_200_OK)
 
     def extract_text_from_pdf(self, pdf_file):
         """Extract text from PDF file"""
-        reader = PyPDF2.PdfReader(pdf_file)
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
         text = ""
-        for page in reader.pages:
-            text += page.extract_text() or ""
+        for page in pdf_reader.pages:
+            text += page.extract_text()
         return text
 
-    def parse_grade_sheet(self, text):
+    def parse_grade_sheet(self, text, semester_num):
         """Parse the grade sheet text to extract subjects and grades"""
         subjects = []
-
-        semester_match = re.search(r'Semester\s*:\s*([IVX]+|\d+)', text, re.IGNORECASE)
-        semester = 1
-
-        if semester_match:
-            value = semester_match.group(1)
-            roman = {'I':1,'II':2,'III':3,'IV':4,'V':5,'VI':6,'VII':7,'VIII':8}
-            semester = roman.get(value, int(value) if value.isdigit() else 1)
-
-        pattern = r'(\d{8})\s+([A-Za-z\s\-\(\)\.#]+?)\s+(\d+\.\d+)\s+([A-Z\+]+)\s+(\d+\.\d+)\s+(\d+\.\d+)'
+        
+        # Pattern to match subject lines
+        # Example: 03606305 Information Security 3.00 A 8.00 24.00
+        pattern = r'(\d+)\s+([A-Za-z\s\-\(\)\.#]+?)\s+(\d+\.\d+)\s+([A-Z\+]+)\s+(\d+\.\d+)\s+(\d+\.\d+)'
+        
         matches = re.findall(pattern, text)
-
-        for code, name, credit, grade, gp, cp in matches:
+        
+        for match in matches:
+            code, name, credit, grade, grade_point, credit_point = match
             subjects.append({
-                'code': code,
+                'code': code.strip(),
                 'name': name.strip(),
+                'credit': float(credit),
                 'grade': grade.strip(),
-                'semester': semester
+                'grade_point': float(grade_point),
+                'credit_point': float(credit_point),
+                'semester': semester_num
             })
-
+        
         return subjects
 
-    def save_results(self, user, subjects):
+    def save_results(self, user, subjects, semester_num):
+        """Save parsed subjects to database"""
         saved = []
-
+        
+        # First, delete existing results for this semester
+        SemesterResult.objects.filter(student=user, semester=semester_num).delete()
+        
         for subject in subjects:
             marks = self.grade_to_marks(subject['grade'])
-
-            SemesterResult.objects.update_or_create(
+            
+            result = SemesterResult.objects.create(
                 student=user,
-                semester=subject['semester'],
+                semester=semester_num,
                 subject=subject['name'],
-                defaults={'marks': marks}
+                marks=marks
             )
-
             saved.append({
                 'subject': subject['name'],
                 'grade': subject['grade'],
-                'marks': marks,
-                'semester': subject['semester']
+                'marks': marks
             })
-
+        
         return saved
 
     def grade_to_marks(self, grade):
-        mapping = {
+        """Convert grade letter to approximate marks"""
+        grade_mapping = {
             'O': 95,
             'A+': 85,
             'A': 75,
@@ -162,27 +179,42 @@ class UploadResultPDFView(APIView):
             'P': 45,
             'F': 30
         }
-        return mapping.get(grade, 50)
+        return grade_mapping.get(grade, 50)
 
-    def analyze_and_recommend(self, subjects):
+    def analyze_and_recommend(self, results):
+        """Analyze subjects and recommend career domain"""
         domain_keywords = {
-            'AI/ML': ['machine learning', 'artificial intelligence'],
-            'Web Development': ['web', 'javascript', 'react'],
-            'Cybersecurity': ['security', 'cryptography'],
-            'IoT': ['iot', 'embedded'],
-            'Data Science': ['data', 'analytics'],
+            'AI/ML': ['machine learning', 'artificial intelligence', 'data mining', 'neural', 'deep learning'],
+            'Web Development': ['web', 'internet', 'html', 'javascript', 'react', '.net', 'programming'],
+            'Cybersecurity': ['security', 'cryptography', 'network security', 'ethical hacking', 'information security'],
+            'IoT': ['iot', 'internet of things', 'embedded', 'sensors'],
+            'Data Science': ['data', 'statistics', 'analytics', 'visualization', 'mining'],
+            'Software Engineering': ['software', 'engineering', 'design patterns', 'testing', 'project']
         }
-
-        scores = {k: 0 for k in domain_keywords}
-
-        for subject in subjects:
-            name = subject['subject'].lower()
+        
+        domain_scores = {domain: 0 for domain in domain_keywords.keys()}
+        
+        for result in results:
+            subject_name = result.subject.lower()
+            marks = result.marks
+            
             for domain, keywords in domain_keywords.items():
-                if any(k in name for k in keywords):
-                    scores[domain] += subject['marks']
-
-        best = max(scores, key=scores.get)
-        return {'recommendation': best}
+                for keyword in keywords:
+                    if keyword in subject_name:
+                        domain_scores[domain] += marks
+                        break
+        
+        sorted_domains = sorted(domain_scores.items(), key=lambda x: x[1], reverse=True)
+        top_domains = [
+            {'domain': domain, 'score': round(score, 2)} 
+            for domain, score in sorted_domains[:3] 
+            if score > 0
+        ]
+        
+        return {
+            'top_domains': top_domains,
+            'recommendation': top_domains[0]['domain'] if top_domains else 'Software Engineering'
+        }
 
 class StudentAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
@@ -190,8 +222,7 @@ class StudentAnalysisView(APIView):
     def get(self, request):
         """Get student's results and analysis"""
         try:
-            # Get all results for the user
-            results = SemesterResult.objects.filter(student=request.user).order_by('-semester', 'subject')
+            results = SemesterResult.objects.filter(student=request.user).order_by('semester', 'subject')
             
             if not results.exists():
                 return Response({
@@ -199,54 +230,70 @@ class StudentAnalysisView(APIView):
                     "message": "No results uploaded yet"
                 }, status=status.HTTP_200_OK)
             
-            # Calculate CGPA
-            total_marks = sum(result.marks for result in results)
-            cgpa = (total_marks / (results.count() * 100)) * 10  # Convert to 10 point scale
+            # Get unique semesters
+            semesters_uploaded = list(results.values_list('semester', flat=True).distinct().order_by('semester'))
             
-            # Group by semester
+            # Calculate overall CGPA
+            total_marks = sum(result.marks for result in results)
+            cgpa = (total_marks / (results.count() * 100)) * 10
+            
+            # Semester-wise breakdown
             semester_data = {}
             for result in results:
                 sem = result.semester
                 if sem not in semester_data:
-                    semester_data[sem] = []
-                semester_data[sem].append({
-                    'subject': result.subject,
-                    'marks': result.marks
-                })
-            
-            # Calculate semester-wise scores
-            semester_scores = []
-            for sem, subjects in sorted(semester_data.items()):
-                sem_avg = sum(s['marks'] for s in subjects) / len(subjects)
-                semester_scores.append({
-                    'semester': sem,
-                    'score': round(sem_avg, 2)
-                })
-            
-            # Analyze and recommend domain
-            domain_recommendation = self.analyze_domain(results)
-            
-            # Subject-wise performance
-            subject_performance = [
-                {
+                    semester_data[sem] = {
+                        'subjects': [],
+                        'total_marks': 0,
+                        'count': 0
+                    }
+                semester_data[sem]['subjects'].append({
                     'subject': result.subject,
                     'marks': result.marks,
                     'grade': self.marks_to_grade(result.marks)
-                }
-                for result in results
-            ]
+                })
+                semester_data[sem]['total_marks'] += result.marks
+                semester_data[sem]['count'] += 1
+            
+            # Calculate SGPA for each semester
+            semester_scores = []
+            for sem in range(1, 7):
+                if sem in semester_data:
+                    sem_avg = semester_data[sem]['total_marks'] / semester_data[sem]['count']
+                    sgpa = (sem_avg / 100) * 10
+                    semester_scores.append({
+                        'semester': sem,
+                        'score': round(sem_avg, 2),
+                        'sgpa': round(sgpa, 2),
+                        'subjects': semester_data[sem]['subjects'],
+                        'has_data': True
+                    })
+                else:
+                    semester_scores.append({
+                        'semester': sem,
+                        'score': 0,
+                        'sgpa': 0,
+                        'subjects': [],
+                        'has_data': False
+                    })
+            
+            # Domain recommendation
+            domain_recommendation = self.analyze_domain(results)
             
             return Response({
                 "has_results": True,
                 "cgpa": round(cgpa, 2),
+                "semesters_uploaded": semesters_uploaded,
+                "total_semesters": len(semesters_uploaded),
                 "semester_scores": semester_scores,
-                "subject_performance": subject_performance[:10],  # Top 10 subjects
                 "domain_recommendation": domain_recommendation,
                 "total_subjects": results.count()
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
             print(f"Error fetching analysis: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -275,7 +322,6 @@ class StudentAnalysisView(APIView):
                         domain_scores[domain] += marks
                         break
         
-        # Get top 3 domains
         sorted_domains = sorted(domain_scores.items(), key=lambda x: x[1], reverse=True)
         top_domains = [
             {'domain': domain, 'score': round(score, 2)} 
@@ -285,15 +331,16 @@ class StudentAnalysisView(APIView):
         
         recommendation = top_domains[0]['domain'] if top_domains else 'Software Engineering'
         
-        # Find weak areas
         weak_subjects = sorted(results, key=lambda x: x.marks)[:3]
         weak_areas = [result.subject for result in weak_subjects]
+        
+        strong_subjects = sorted(results, key=lambda x: x.marks, reverse=True)[:3]
         
         return {
             'recommended_domain': recommendation,
             'top_domains': top_domains,
             'weak_areas': weak_areas,
-            'strong_subject': max(results, key=lambda x: x.marks).subject if results else None
+            'strong_subjects': [s.subject for s in strong_subjects]
         }
     
     def marks_to_grade(self, marks):
