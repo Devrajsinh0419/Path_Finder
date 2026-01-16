@@ -15,15 +15,17 @@ import { toast } from '@/components/ui/use-toast';
 interface AnalysisData {
   has_results: boolean;
   cgpa?: number;
-  semester_scores?: Array<{ semester: number; score: number }>;
+  semester_scores?: Array<{ semester: number; score: number; sgpa: number; has_data: boolean }>;
   subject_performance?: Array<{ subject: string; marks: number; grade: string }>;
   domain_recommendation?: {
     recommended_domain: string;
     top_domains: Array<{ domain: string; score: number }>;
     weak_areas: string[];
-    strong_subject: string;
+    strong_subjects: string;
   };
   total_subjects?: number;
+  semesters_uploaded?: number[];
+  total_semesters?: number;
 }
 
 export function Dashboard() {
@@ -192,15 +194,33 @@ export function Dashboard() {
             {analysis.semester_scores?.map((sem) => (
               <div
                 key={sem.semester}
-                className="bg-accent/10 rounded-lg p-4 text-center"
+                className={`${
+                  sem.has_data 
+                    ? 'bg-accent/10 border-accent/20' 
+                    : 'bg-muted/10 border-muted/20'
+                } border rounded-lg p-4 text-center`}
               >
                 <p className="text-sm text-muted-foreground mb-2">
                   Sem {sem.semester}
                 </p>
-                <p className="text-2xl font-bold text-accent">{sem.score}</p>
+                {sem.has_data ? (
+                  <>
+                  <p className='text-2xl font-bold text-accent'>{sem.score}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    SGPA: {sem.sgpa}
+                  </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Not uploaded</p>
+                )}
               </div>
             ))}
           </div>
+          {analysis.semesters_uploaded && (
+            <p className="text-sm text-muted-foreground mt-4">
+              {analysis.total_semesters} of 6 semesters uploaded
+            </p>
+          )}
         </div>
 
         {/* Areas for Improvement */}
