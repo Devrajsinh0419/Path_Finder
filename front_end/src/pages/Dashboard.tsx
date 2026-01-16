@@ -138,7 +138,7 @@ export function Dashboard() {
               <TrendingUp className="w-5 h-5 text-accent" />
             </div>
             <p className="text-lg font-semibold">
-              {analysis.domain_recommendation?.strong_subject}
+              {analysis.domain_recommendation?.strong_subjects}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               Your strongest subject
