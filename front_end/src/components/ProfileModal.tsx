@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,8 +16,8 @@ import {
   GraduationCap, 
   BookOpen,
   Calendar,
-  X,
-  Edit
+  Edit,
+  LogOut
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -26,8 +27,11 @@ interface ProfileModalProps {
 }
 
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -49,6 +53,27 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    setLoggingOut(true);
+    
+    // Clear all stored data
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    
+    // Show success message
+    toast({
+      title: 'Logged out successfully',
+      description: 'You have been logged out of your account',
+    });
+    
+    // Close modal and redirect to login
+    onClose();
+    setTimeout(() => {
+      navigate('/login');
+    }, 500);
   };
 
   if (loading) {
@@ -182,27 +207,56 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 pt-4 border-t border-border/30">
+        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/30">
           <Button
             variant="outline"
-            className="flex-1"
             onClick={() => {
-              // Navigate to edit profile
               onClose();
               // You can add navigation to edit page here
+              // navigate('/edit-profile');
             }}
           >
             <Edit className="w-4 h-4 mr-2" />
             Edit Profile
           </Button>
+          
           <Button
-            variant="accent"
-            className="flex-1"
-            onClick={onClose}
+            variant="destructive"
+            onClick={() => setShowLogoutConfirm(true)}
           >
-            Close
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
           </Button>
         </div>
+
+        {/* Logout Confirmation Modal */}
+        {showLogoutConfirm && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+            <div className="bg-background p-6 rounded-lg max-w-sm mx-4 space-y-4">
+              <h3 className="font-bold text-lg">Confirm Logout</h3>
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to logout?
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowLogoutConfirm(false)}
+                > 
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                >
+                  {loggingOut ? 'Logging out...' : 'Logout'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}  
       </DialogContent>
     </Dialog>
   );
