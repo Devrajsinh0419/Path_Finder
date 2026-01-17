@@ -71,7 +71,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
     
-    navigate('/complete-profile');
+    navigate('/input-details');
   } catch (err: any) {
     console.error('Signup failed:', err);
     console.error('Response data:', err.response?.data);
