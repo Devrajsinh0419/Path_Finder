@@ -19,7 +19,7 @@ const Navbar = () => {
             <Sparkles className="w-4 h-4 text-accent" />
           </div>
           <span className="font-display text-xl font-bold text-foreground tracking-wider">
-            PathFinders
+            PathFinder
           </span>
         </Link>
 
