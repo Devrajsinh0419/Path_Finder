@@ -11,17 +11,23 @@ import {
   Star
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { ProfileModal } from '@/components/ProfileModal'; // Add this import
 
 interface AnalysisData {
   has_results: boolean;
   cgpa?: number;
-  semester_scores?: Array<{ semester: number; score: number; sgpa: number; has_data: boolean }>;
+  semester_scores?: Array<{ 
+    semester: number; 
+    score: number;
+    sgpa: number;
+    has_data: boolean;
+  }>;
   subject_performance?: Array<{ subject: string; marks: number; grade: string }>;
   domain_recommendation?: {
     recommended_domain: string;
     top_domains: Array<{ domain: string; score: number }>;
     weak_areas: string[];
-    strong_subjects: string;
+    strong_subjects: string[];
   };
   total_subjects?: number;
   semesters_uploaded?: number[];
@@ -33,6 +39,7 @@ export function Dashboard() {
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [showProfile, setShowProfile] = useState(false); // Add this state
 
   useEffect(() => {
     fetchAnalysis();
@@ -93,14 +100,27 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">
-            Welcome back, {user?.first_name || 'Student'}!
-          </h1>
-          <p className="text-muted-foreground">
-            Here's your academic performance overview
-          </p>
+        {/* Header with Profile Icon */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">
+              Welcome back, {user?.first_name || 'Student'}!
+            </h1>
+            <p className="text-muted-foreground">
+              Here's your academic performance overview
+            </p>
+          </div>
+          
+          {/* Profile Icon Button */}
+          <button
+            onClick={() => setShowProfile(true)}
+            className="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-accent/50 flex items-center justify-center hover:scale-110 transition-transform shadow-lg hover:shadow-accent/50"
+            title="View Profile"
+          >
+            <span className="text-xl font-bold text-white">
+              {user?.first_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase()}
+            </span>
+          </button>
         </div>
 
         {/* Main Stats */}
@@ -138,7 +158,7 @@ export function Dashboard() {
               <TrendingUp className="w-5 h-5 text-accent" />
             </div>
             <p className="text-lg font-semibold">
-              {analysis.domain_recommendation?.strong_subjects}
+              {analysis.domain_recommendation?.strong_subjects?.[0] || 'N/A'}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               Your strongest subject
@@ -205,10 +225,10 @@ export function Dashboard() {
                 </p>
                 {sem.has_data ? (
                   <>
-                  <p className='text-2xl font-bold text-accent'>{sem.score}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    SGPA: {sem.sgpa}
-                  </p>
+                    <p className="text-2xl font-bold text-accent">{sem.score}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      SGPA: {sem.sgpa}
+                    </p>
                   </>
                 ) : (
                   <p className="text-sm text-muted-foreground">Not uploaded</p>
@@ -224,7 +244,7 @@ export function Dashboard() {
         </div>
 
         {/* Areas for Improvement */}
-        {analysis.domain_recommendation?.weak_areas.length > 0 && (
+        {analysis.domain_recommendation?.weak_areas && analysis.domain_recommendation.weak_areas.length > 0 && (
           <div className="glass-card-strong p-6">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <AlertCircle className="w-6 h-6 text-yellow-500" />
@@ -263,6 +283,12 @@ export function Dashboard() {
             Browse Resources
           </Button>
         </div>
+
+        {/* Profile Modal - Add this at the end, before closing the main container div */}
+        <ProfileModal 
+          isOpen={showProfile} 
+          onClose={() => setShowProfile(false)} 
+        />
       </div>
     </div>
   );

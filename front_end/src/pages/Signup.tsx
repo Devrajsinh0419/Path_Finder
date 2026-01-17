@@ -112,7 +112,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               <Sparkles className="w-5 h-5 text-accent" />
             </div>
             <span className="font-display text-2xl font-bold tracking-wider">
-              PathFinders
+              PathFinder
             </span>
           </Link>
           
