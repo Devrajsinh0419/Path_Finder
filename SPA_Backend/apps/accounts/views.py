@@ -136,3 +136,33 @@ class StudentProfileView(APIView):
         serializer = ProfileCompletionSerializer(profile)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Get user profile details"""
+        try:
+            user = request.user
+            profile = user.profile
+            
+            return Response({
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "role": user.role,
+                },
+                "profile": {
+                    "full_name": profile.full_name,
+                    "enrollment_no": profile.enrollment_no,
+                    "college_name": profile.college_name,
+                    "current_semester": profile.current_semester,
+                    "is_completed": profile.is_completed,
+                }
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
