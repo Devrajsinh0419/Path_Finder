@@ -3,11 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Eye, EyeOff } from 'lucide-react'; // Add Eye icons
 import Stars from '@/components/Stars';
 import heroBg from '@/assets/hero-bg.jpg';
 import api from '@/lib/api';
-import axios from 'axios';
 
 const Signup = () => {
   const [firstName, setFirstName] = useState('');
@@ -15,86 +14,69 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // Add this
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // Add this
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  if (!agreeTerms) {
-    setError('You must agree to the terms and conditions.');
-    return;
-  }
-  if (password !== confirmPassword) {
-    setError('Passwords do not match.');
-    return;
-  }
-  
-  const payload = {
-    first_name: firstName,
-    last_name: lastName,
-    email,  
-    password,
-    password2: confirmPassword,
-    role: 'student',
-  };
-  
-  console.log('Payload being sent:', payload);
-  
-  setLoading(true);
-  setError('');
-  
-  try {
-    // Use plain axios instead of api instance
-    const response = await axios.post(
-      'http://localhost:8000/api/auth/register/',
-      payload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    
-    console.log('Registration response:', response.data);
-    
-    // Save tokens
-    if (response.data.tokens) {
-      localStorage.setItem('access_token', response.data.tokens.access);
-      localStorage.setItem('refresh_token', response.data.tokens.refresh);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!agreeTerms) {
+      setError('You must agree to the terms and conditions.');
+      return;
     }
-    
-    // Save user data
-    if (response.data.user) {
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
     }
-    
-    navigate('/input-details');
-  } catch (err: any) {
-    console.error('Signup failed:', err);
-    console.error('Response data:', err.response?.data);
-    
-    if (err.response?.data) {
-      const errorData = err.response.data;
-      const errorMessages = Object.entries(errorData)
-        .map(([key, value]: [string, any]) => {
-          if (Array.isArray(value)) {
-            return `${key}: ${value.join(', ')}`;
-          }
-          return `${key}: ${value}`;
-        })
-        .join('\n');
+    setLoading(true);
+    setError('');
+    try {
+      const response = await api.post('/auth/register/', {
+        first_name: firstName,
+        last_name: lastName,
+        email,  
+        password,
+        password2: confirmPassword,
+        role: 'student',
+      });
       
-      setError(errorMessages);
-    } else {
-      setError('Failed to sign up. Please try again.');
+      // Save tokens
+      if (response.data.tokens) {
+        localStorage.setItem('access_token', response.data.tokens.access);
+        localStorage.setItem('refresh_token', response.data.tokens.refresh);
+      }
+      
+      // Save user data
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      
+      navigate('/complete-profile');
+    } catch (err: any) {
+      if (err.response && err.response.data) {
+        const errorData = err.response.data;
+        if (errorData.email) {
+          setError(`Email: ${errorData.email[0]}`);
+        } else if (errorData.password) {
+          setError(`Password: ${errorData.password[0]}`);
+        } else if (errorData.first_name) {
+          setError(`First Name: ${errorData.first_name[0]}`);
+        } else if (errorData.last_name) {
+          setError(`Last Name: ${errorData.last_name[0]}`);
+        } else {
+          setError('Failed to sign up. Please try again.');
+        }
+      } else {
+        setError('Failed to sign up. Please try again.');
+      }
+      console.error('Signup failed:', err);
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -103,8 +85,8 @@ const handleSubmit = async (e: React.FormEvent) => {
         className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
-        <Stars />
         <div className="absolute inset-0 bg-background/20" />
+        <Stars />
         
         <div className="relative z-10 flex flex-col items-start justify-center px-16">
           <Link to="/" className="flex items-center gap-3 mb-8">
@@ -112,7 +94,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               <Sparkles className="w-5 h-5 text-accent" />
             </div>
             <span className="font-display text-2xl font-bold tracking-wider">
-              PathFinder
+              PathFinders
             </span>
           </Link>
           
@@ -161,6 +143,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+              
               <div className="flex gap-4">
                 <Input
                   type="text"
@@ -179,6 +162,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   disabled={loading}
                 />
               </div>
+              
               <div>
                 <Input
                   type="email"
@@ -190,26 +174,54 @@ const handleSubmit = async (e: React.FormEvent) => {
                 />
               </div>
 
-              <div>
+              {/* Password field with toggle */}
+              <div className="relative">
                 <Input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
+                  className="pr-10"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
               
-              <div>
+              {/* Confirm Password field with toggle */}
+              <div className="relative">
                 <Input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm Password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   disabled={loading}
+                  className="pr-10"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
 
               <div className="flex items-center gap-2">
