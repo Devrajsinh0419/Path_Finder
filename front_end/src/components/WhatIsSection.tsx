@@ -22,7 +22,7 @@ const WhatIsSection = () => {
                 the best career domain for you.
               </p>
 
-              <Link to="/input-details">
+              <Link to="/signup">
                 <Button variant="hero" size="default">
                   Get Started
                 </Button>
