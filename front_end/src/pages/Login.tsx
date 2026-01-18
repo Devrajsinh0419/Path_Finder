@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Eye, EyeOff } from 'lucide-react'; // Add Eye icons
 import Stars from '@/components/Stars';
 import heroBg from '@/assets/hero-bg.jpg';
 import api from '@/lib/api';
+import { toast } from '@/components/ui/use-toast';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // Add this state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -20,29 +20,52 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
     try {
       const response = await api.post('/auth/login/', {
         email,
         password,
       });
-      console.log('Login successful:', response.data);
-      // Save the token and user data to localStorage
-      localStorage.setItem('token', response.data.access);
-      localStorage.setItem('user', JSON.stringify({
-        username: response.data.username,
-        role: response.data.role,
-        email: email,
+
+      // Store tokens
+      if (response.data.access) {
+        localStorage.setItem('access_token', response.data.access);
+      }
+      if (response.data.refresh) {
+        localStorage.setItem('refresh_token', response.data.refresh);
+      }
+
+      // Store user data
+      const userData = {
+        id: response.data.id || response.data.user?.id,
+        email: response.data.email,
         first_name: response.data.first_name,
-        last_name: response.data.last_name
-      }));
+        last_name: response.data.last_name,
+        role: response.data.role,
+      };
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      toast({
+        title: 'Login successful!',
+        description: 'Welcome back!',
+      });
+
       navigate('/dashboard');
     } catch (err: any) {
-      if (err.response && err.response.data) {
-        setError(err.response.data.detail || 'Failed to login. Please check your credentials.');
+      console.error('Login error:', err);
+      
+      if (err.response?.data) {
+        const errorData = err.response.data;
+        if (errorData.detail) {
+          setError(errorData.detail);
+        } else if (errorData.non_field_errors) {
+          setError(errorData.non_field_errors[0]);
+        } else {
+          setError('Invalid email or password');
+        }
       } else {
-        setError('Failed to login. Please check your credentials.');
+        setError('Login failed. Please try again.');
       }
-      console.error('Login failed:', err);
     } finally {
       setLoading(false);
     }
@@ -55,8 +78,8 @@ const Login = () => {
         className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
-        <Stars />
         <div className="absolute inset-0 bg-background/20" />
+        <Stars />
         
         <div className="relative z-10 flex flex-col items-start justify-center px-16">
           <Link to="/" className="flex items-center gap-3 mb-8">
@@ -69,9 +92,9 @@ const Login = () => {
           </Link>
           
           <h1 className="text-4xl md:text-5xl font-bold leading-tight">
-            <span className="gradient-text">Discover Your</span>
+            <span className="gradient-text">Welcome back to</span>
             <br />
-            <span className="gradient-text">path to success</span>
+            <span className="gradient-text">Your Journey</span>
           </h1>
         </div>
       </div>
@@ -112,7 +135,12 @@ const Login = () => {
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-{error && <p className="text-red-500 text-sm text-center">{error}</p>}
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                  <p className="text-red-500 text-sm text-center">{error}</p>
+                </div>
+              )}
+
               <div>
                 <Input
                   type="email"
@@ -124,36 +152,38 @@ const Login = () => {
                 />
               </div>
 
-              <div>
+              {/* Password field with toggle */}
+              <div className="relative">
                 <Input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
+                  className="pr-10"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="remember"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    className="border-muted-foreground data-[state=checked]:bg-accent data-[state=checked]:border-accent"
-                    disabled={loading}
-                  />
-                  <label htmlFor="remember" className="text-muted-foreground cursor-pointer">
-                    Remember me
-                  </label>
-                </div>
-                <Link to="/forgot-password" className="text-muted-foreground hover:text-accent transition-colors">
-                  Forgot password?
-                </Link>
-              </div>
-
-              <Button type="submit" variant="accent" size="lg" className="w-full" disabled={loading}>
+              <Button 
+                type="submit" 
+                variant="accent" 
+                size="lg" 
+                className="w-full"
+                disabled={loading}
+              >
                 {loading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
