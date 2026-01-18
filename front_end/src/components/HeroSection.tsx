@@ -26,7 +26,7 @@ const HeroSection = () => {
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-4 animate-fade-in-up animation-delay-400">
-          <Link to="/input-details">
+          <Link to="/signup">
             <Button variant="hero" size="lg">
               Explore Careers
             </Button>
