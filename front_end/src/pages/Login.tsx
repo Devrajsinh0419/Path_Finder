@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Eye, EyeOff } from 'lucide-react'; // Add Eye icons
 import Stars from '@/components/Stars';
 import heroBg from '@/assets/hero-bg.jpg';
 import api from '@/lib/api';
@@ -11,6 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // Add this state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -20,24 +21,18 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    console.log('Attempting login with:', { email }); // Debug log
-
     try {
       const response = await api.post('/auth/login/', {
         email,
         password,
       });
 
-      console.log('Login response:', response.data); // Debug log
-
       // Store tokens
       if (response.data.access) {
         localStorage.setItem('access_token', response.data.access);
-        console.log('Access token stored'); // Debug log
       }
       if (response.data.refresh) {
         localStorage.setItem('refresh_token', response.data.refresh);
-        console.log('Refresh token stored'); // Debug log
       }
 
       // Store user data
@@ -49,18 +44,15 @@ const Login = () => {
         role: response.data.role,
       };
       localStorage.setItem('user', JSON.stringify(userData));
-      console.log('User data stored:', userData); // Debug log
 
       toast({
         title: 'Login successful!',
         description: 'Welcome back!',
       });
 
-      // Navigate to dashboard
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
-      console.error('Error response:', err.response?.data);
       
       if (err.response?.data) {
         const errorData = err.response.data;
@@ -95,7 +87,7 @@ const Login = () => {
               <Sparkles className="w-5 h-5 text-accent" />
             </div>
             <span className="font-display text-2xl font-bold tracking-wider">
-              PathFinder
+              PathFinders
             </span>
           </Link>
           
@@ -160,15 +152,29 @@ const Login = () => {
                 />
               </div>
 
-              <div>
+              {/* Password field with toggle */}
+              <div className="relative">
                 <Input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
+                  className="pr-10"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
 
               <Button 
