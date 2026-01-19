@@ -18,25 +18,34 @@ except FileNotFoundError:
 def predict_domain(marks):
     scores = calculate_domain_scores(marks)
 
-    backend = scores["backend"]
-    web = scores["web"]
-    data = scores["data"]
+    backend = scores.get("backend", 0)
+    web = scores.get("web", 0)
+    data = scores.get("data", 0)
+    soft = scores.get("soft", 0)
 
-    if backend >= web + 0.15:
-        primary = "Backend / Software Engineer"
-        secondary = "Web Development"
-    elif data >= backend:
-        primary = "Data / Analytics"
-        secondary = "Backend / Software Engineer"
-    else:
-        primary = "Web Development"
-        secondary = "Backend / Software Engineer"
+    domain_scores = {
+        "BACKEND": backend,
+        "WEB": web,
+        "DATA": data,
+        "SOFT": soft,
+    }
 
-    confidence = max(backend, web, data) / 100
+    sorted_domains = sorted(
+        domain_scores.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    primary = sorted_domains[0][0]
+    secondary = sorted_domains[1][0]
+
+    confidence = round(
+        sorted_domains[0][1] - sorted_domains[1][1], 2
+    )
 
     return {
         "primary_domain": primary,
         "secondary_domain": secondary,
-        "scores": scores,
-        "confidence": round(confidence, 2),
+        "confidence": confidence,
+        "scores": domain_scores,
     }

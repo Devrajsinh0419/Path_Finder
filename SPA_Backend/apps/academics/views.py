@@ -302,9 +302,17 @@ class StudentAnalysisView(APIView):
     def analyze_domain(self, results):
         marks_map = {}
 
+        NORMALIZE = {
+            "DATA STRUCTURE": "DATA STRUCTURES",
+            "OPERATING SYSTEM": "OPERATING SYSTEMS",
+            "DATABASE MANAGEMENT SYSTEM": "DBMS",
+    }
+
         for result in results:
             subject_key = result.subject.upper().strip()
+            subject_key = NORMALIZE.get(subject_key, subject_key)
             marks_map[subject_key] = result.marks
+
         prediction = predict_domain(marks_map)
 
         weak_subjects = sorted(results, key=lambda x: x.marks)[:3]
