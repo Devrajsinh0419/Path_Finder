@@ -36,7 +36,7 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/10">
+    <nav className="fixed top-0 left-0 right-0 z-50 transperant">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -55,7 +55,7 @@ const Navbar = () => {
               <button
                 key={item.sectionId}
                 onClick={() => scrollToSection(item.sectionId)}
-                className="text-foreground/80 hover:text-accent transition-colors cursor-pointer"
+                className="text-white/80 hover:text-accent transition-colors cursor-pointer"
               >
                 {item.label}
               </button>

@@ -178,7 +178,7 @@ const InputDetails = () => {
                         <SelectValue placeholder="Select year" />
                       </SelectTrigger>
                       <SelectContent>
-                        {['1st', '2nd', '3rd', '4th'].map((year) => (
+                        {['1st', '2nd', '3rd'].map((year) => (
                           <SelectItem key={year} value={year}>{year}</SelectItem>
                         ))}
                       </SelectContent>
