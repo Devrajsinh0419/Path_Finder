@@ -24,7 +24,6 @@ module.exports = {
         background: "hsl(0 0% 98%)",
         foreground: "hsl(224 71% 4%)",
         gray: "#F5F6FA",
-        graydark: "hsl(252,100%,98%)",
         primary: {
           DEFAULT: "hsl(262 83% 58%)",
           foreground: "hsl(0 0% 100%)",
@@ -50,7 +49,7 @@ module.exports = {
           foreground: "hsl(224 71% 4%)",
         },
         card: {
-          DEFAULT: "hsl(252,100%,98%)",
+          DEFAULT: "hsl(0 0% 100%)",
           foreground: "hsl(224 71% 4%)",
         },
       },
