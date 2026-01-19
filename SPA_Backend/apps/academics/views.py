@@ -9,7 +9,7 @@ import re
 
 from .models import SemesterResult, StudentProfile
 from .serializers import SemesterResultSerializer, StudentProfileSerializer
-
+from apps.ml_engine.predictor import predict_domain
 
 class SemesterResultCreateView(generics.CreateAPIView):
     serializer_class = SemesterResultSerializer
@@ -300,48 +300,28 @@ class StudentAnalysisView(APIView):
             )
     
     def analyze_domain(self, results):
-        """Analyze and recommend career domain"""
-        domain_keywords = {
-            'AI/ML': ['machine learning', 'artificial intelligence', 'data mining', 'neural', 'deep learning'],
-            'Web Development': ['web', 'internet', 'html', 'javascript', 'react', '.net', 'programming'],
-            'Cybersecurity': ['security', 'cryptography', 'network security', 'ethical hacking', 'information security'],
-            'IoT': ['iot', 'internet of things', 'embedded', 'sensors'],
-            'Data Science': ['data', 'statistics', 'analytics', 'visualization', 'mining'],
-            'Software Engineering': ['software', 'engineering', 'design patterns', 'testing', 'project']
-        }
-        
-        domain_scores = {domain: 0 for domain in domain_keywords.keys()}
-        
+        marks_map = {}
+
         for result in results:
-            subject_name = result.subject.lower()
-            marks = result.marks
-            
-            for domain, keywords in domain_keywords.items():
-                for keyword in keywords:
-                    if keyword in subject_name:
-                        domain_scores[domain] += marks
-                        break
-        
-        sorted_domains = sorted(domain_scores.items(), key=lambda x: x[1], reverse=True)
-        top_domains = [
-            {'domain': domain, 'score': round(score, 2)} 
-            for domain, score in sorted_domains[:3] 
-            if score > 0
-        ]
-        
-        recommendation = top_domains[0]['domain'] if top_domains else 'Software Engineering'
-        
+            subject_key = result.subject.upper().strip()
+            marks_map[subject_key] = result.marks
+        prediction = predict_domain(marks_map)
+
         weak_subjects = sorted(results, key=lambda x: x.marks)[:3]
-        weak_areas = [result.subject for result in weak_subjects]
-        
         strong_subjects = sorted(results, key=lambda x: x.marks, reverse=True)[:3]
-        
+
         return {
-            'recommended_domain': recommendation,
-            'top_domains': top_domains,
-            'weak_areas': weak_areas,
-            'strong_subjects': [s.subject for s in strong_subjects]
-        }
+        "recommended_domain": prediction["primary_domain"],
+        "secondary_domain": prediction["secondary_domain"],
+        "confidence": prediction["confidence"],
+        "domain_scores": prediction["scores"],
+        "weak_areas": [w.subject for w in weak_subjects],
+        "strong_subjects": [s.subject for s in strong_subjects],
+    }
+
+
+
+
     
     def marks_to_grade(self, marks):
         """Convert marks to grade"""
@@ -359,3 +339,4 @@ class StudentAnalysisView(APIView):
             return 'P'
         else:
             return 'F'
+    
