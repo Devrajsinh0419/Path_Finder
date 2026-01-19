@@ -11,4 +11,9 @@ def calculate_domain_scores(marks_map):
                 for domain, weight in weights.items():
                     scores[domain] += marks * weight
 
-    return scores
+    return {
+        "backend": round(scores["BACKEND"], 2) if scores["BACKEND"] else 0,
+        "web": round(scores["WEB"], 2) if scores["WEB"] else 0,
+        "data": round(scores["DATA"], 2) if scores["DATA"] else 0,
+        "soft": round(scores["SOFT"], 2) if scores["SOFT"] else 0,
+}
