@@ -299,27 +299,163 @@ class StudentAnalysisView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
+    def marks_to_grade(self, marks):
+        """Convert marks to grade"""
+        if marks >= 90:
+            return 'O'
+        elif marks >= 80:
+            return 'A+'
+        elif marks >= 70:
+            return 'A'
+        elif marks >= 60:
+            return 'B+'
+        elif marks >= 50:
+            return 'B'
+        elif marks >= 40:
+            return 'P'
+        else:
+            return 'F'
+    
     def analyze_domain(self, results):
-        marks_map = {}
-
+        """Analyze and recommend career domain based on ML prediction"""
+        
+        # Initialize subject category scores
+        marks_map = {
+            'frontend': 0,
+            'backend': 0,
+            'ai_ml': 0,
+            'cybersecurity': 0,
+            'data_science': 0,
+            'mobile': 0,
+            'devops': 0,
+            'iot': 0,
+            'blockchain': 0,
+            'game_dev': 0
+        }
+        
+        # Subject keywords mapping to categories
+        subject_keywords = {
+            'frontend': ['web', 'html', 'css', 'javascript', 'react', 'angular', 'vue', 'ui', 'ux', 'frontend'],
+            'backend': ['backend', 'server', 'api', 'database', 'sql', 'node', 'django', 'flask', 'spring', '.net', 'java', 'programming'],
+            'ai_ml': ['machine learning', 'artificial intelligence', 'neural', 'deep learning', 'ai', 'ml', 'nlp', 'computer vision'],
+            'cybersecurity': ['security', 'cryptography', 'network security', 'ethical hacking', 'information security', 'cyber'],
+            'data_science': ['data', 'statistics', 'analytics', 'visualization', 'mining', 'big data', 'data science'],
+            'mobile': ['mobile', 'android', 'ios', 'flutter', 'react native', 'swift', 'kotlin'],
+            'devops': ['devops', 'docker', 'kubernetes', 'ci/cd', 'jenkins', 'aws', 'cloud', 'deployment'],
+            'iot': ['iot', 'internet of things', 'embedded', 'sensors', 'arduino', 'raspberry'],
+            'blockchain': ['blockchain', 'cryptocurrency', 'smart contract', 'ethereum', 'web3'],
+            'game_dev': ['game', 'unity', '3d', 'graphics', 'animation', 'game development']
+        }
+        
+        # Count for averaging
+        counts = {key: 0 for key in marks_map.keys()}
+        
+        # Classify subjects and aggregate marks
         for result in results:
-            subject_key = result.subject.upper().strip()
-            marks_map[subject_key] = result.marks
-        prediction = predict_domain(marks_map)
-
+            subject_name = result.subject.lower()
+            marks = result.marks
+            
+            matched = False
+            for category, keywords in subject_keywords.items():
+                if not matched:  # Only count each subject once
+                    for keyword in keywords:
+                        if keyword in subject_name:
+                            marks_map[category] += marks
+                            counts[category] += 1
+                            matched = True
+                            break
+        
+        # Calculate averages (avoid division by zero)
+        for category in marks_map.keys():
+            if counts[category] > 0:
+                marks_map[category] = marks_map[category] / counts[category]
+            else:
+                marks_map[category] = 0
+        
+        print(f"Marks map for prediction: {marks_map}")  # Debug log
+        
+        # Use ML predictor
+        try:
+            from apps.ml_engine.predictor import predict_domain
+            prediction, confidence = predict_domain(marks_map)
+            
+            # Map ML prediction to display-friendly names
+            domain_name_mapping = {
+                'frontend': 'Frontend Development',
+                'backend': 'Backend Development',
+                'ai_ml': 'AI/ML',
+                'cybersecurity': 'Cybersecurity',
+                'data_science': 'Data Science',
+                'mobile': 'Mobile Development',
+                'devops': 'DevOps',
+                'iot': 'IoT',
+                'blockchain': 'Blockchain',
+                'game_dev': 'Game Development'
+            }
+            
+            recommended_domain = domain_name_mapping.get(prediction, 'Software Engineering')
+            
+            # Create top domains list from marks_map
+            sorted_categories = sorted(marks_map.items(), key=lambda x: x[1], reverse=True)
+            top_domains = [
+                {
+                    'domain': domain_name_mapping.get(cat, cat),
+                    'score': round(score, 2)
+                }
+                for cat, score in sorted_categories[:3]
+                if score > 0
+            ]
+            
+        except Exception as e:
+            print(f"ML prediction error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # Fallback to keyword-based recommendation
+            domain_keywords = {
+                'AI/ML': ['machine learning', 'artificial intelligence', 'data mining', 'neural', 'deep learning'],
+                'Web Development': ['web', 'internet', 'html', 'javascript', 'react', '.net', 'programming'],
+                'Cybersecurity': ['security', 'cryptography', 'network security', 'ethical hacking', 'information security'],
+                'IoT': ['iot', 'internet of things', 'embedded', 'sensors'],
+                'Data Science': ['data', 'statistics', 'analytics', 'visualization', 'mining'],
+                'Software Engineering': ['software', 'engineering', 'design patterns', 'testing', 'project']
+            }
+            
+            domain_scores = {domain: 0 for domain in domain_keywords.keys()}
+            
+            for result in results:
+                subject_name = result.subject.lower()
+                marks = result.marks
+                
+                for domain, keywords in domain_keywords.items():
+                    for keyword in keywords:
+                        if keyword in subject_name:
+                            domain_scores[domain] += marks
+                            break
+            
+            sorted_domains = sorted(domain_scores.items(), key=lambda x: x[1], reverse=True)
+            top_domains = [
+                {'domain': domain, 'score': round(score, 2)} 
+                for domain, score in sorted_domains[:3] 
+                if score > 0
+            ]
+            
+            recommended_domain = top_domains[0]['domain'] if top_domains else 'Software Engineering'
+            confidence = 0
+        
+        # Find weak and strong subjects
         weak_subjects = sorted(results, key=lambda x: x.marks)[:3]
+        weak_areas = [result.subject for result in weak_subjects]
+        
         strong_subjects = sorted(results, key=lambda x: x.marks, reverse=True)[:3]
-
+        
         return {
-        "recommended_domain": prediction["primary_domain"],
-        "secondary_domain": prediction["secondary_domain"],
-        "confidence": prediction["confidence"],
-        "domain_scores": prediction["scores"],
-        "weak_areas": [w.subject for w in weak_subjects],
-        "strong_subjects": [s.subject for s in strong_subjects],
-    }
-
-
+            'recommended_domain': recommended_domain,
+            'confidence': confidence,
+            'top_domains': top_domains,
+            'weak_areas': weak_areas,
+            'strong_subjects': [s.subject for s in strong_subjects]
+        }
 
 
     
