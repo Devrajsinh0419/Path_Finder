@@ -54,7 +54,7 @@ const Signup = () => {
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       
-      navigate('/complete-profile');
+      navigate('/input-details');
     } catch (err: any) {
       if (err.response && err.response.data) {
         const errorData = err.response.data;
