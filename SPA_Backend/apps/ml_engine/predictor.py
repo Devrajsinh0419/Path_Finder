@@ -1,6 +1,7 @@
 import joblib
 from pathlib import Path
 from .domain_weights import DOMAINS
+from .scoring import calculate_domain_scores
 
 # Get the absolute path to the model file
 BASE_DIR = Path(__file__).resolve().parent
@@ -14,12 +15,28 @@ except FileNotFoundError:
     print("Please train the model by running: python apps/ml_engine/train_model.py")
     model = None
 
-def predict_domain(feature_vector):
-    if model is None:
-        # Return a placeholder response when model isn't trained yet
-        return "Computer Science", 0.0
-    
-    prediction = model.predict([feature_vector])[0]
-    probs = model.predict_proba([feature_vector])[0]
-    confidence = max(probs)
-    return prediction, round(confidence * 100, 2)
+def predict_domain(marks):
+    scores = calculate_domain_scores(marks)
+
+    backend = scores["backend"]
+    web = scores["web"]
+    data = scores["data"]
+
+    if backend >= web + 0.15:
+        primary = "Backend / Software Engineer"
+        secondary = "Web Development"
+    elif data >= backend:
+        primary = "Data / Analytics"
+        secondary = "Backend / Software Engineer"
+    else:
+        primary = "Web Development"
+        secondary = "Backend / Software Engineer"
+
+    confidence = max(backend, web, data) / 100
+
+    return {
+        "primary_domain": primary,
+        "secondary_domain": secondary,
+        "scores": scores,
+        "confidence": round(confidence, 2),
+    }
