@@ -231,7 +231,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
         {/* Logout Confirmation Modal */}
         {showLogoutConfirm && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+          <div className="absolute inset-0 bg-white/50 flex items-center justify-center rounded-lg">
             <div className="bg-background p-6 rounded-lg max-w-sm mx-4 space-y-4">
               <h3 className="font-bold text-lg">Confirm Logout</h3>
               <p className="text-sm text-muted-foreground">

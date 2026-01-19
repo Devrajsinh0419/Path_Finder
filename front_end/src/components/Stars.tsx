@@ -10,42 +10,48 @@ interface Star {
 }
 
 const Stars = () => {
-  const [stars, setStars] = useState<Star[]>([]);
-
-  useEffect(() => {
-    const generateStars = () => {
-      const newStars: Star[] = [];
-      for (let i = 0; i < 50; i++) {
-        newStars.push({
-          id: i,
-          x: Math.random() * 100,
-          y: Math.random() * 60,
-          size: Math.random() * 2 + 1,
-          delay: Math.random() * 3,
-          duration: Math.random() * 2 + 2,
-        });
-      }
-      setStars(newStars);
-    };
-    generateStars();
-  }, []);
-
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {stars.map((star) => (
+    <div className="stars-container">
+      {[...Array(50)].map((_, i) => (
         <div
-          key={star.id}
-          className="absolute rounded-full bg-foreground/60 animate-twinkle"
+          key={i}
+          className="star"
           style={{
-            left: `${star.x}%`,
-            top: `${star.y}%`,
-            width: `${star.size}px`,
-            height: `${star.size}px`,
-            animationDelay: `${star.delay}s`,
-            animationDuration: `${star.duration}s`,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 3}s`,
           }}
         />
       ))}
+      <style>{`
+        .stars-container {
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
+          pointer-events: none;
+        }
+        
+        .star {
+          position: absolute;
+          width: 2px;
+          height: 2px;
+          background: hsl(262, 83%, 58%);
+          border-radius: 50%;
+          animation: twinkle 3s infinite;
+          opacity: 0.3;
+        }
+        
+        @keyframes twinkle {
+          0%, 100% {
+            opacity: 0.1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.5);
+          }
+        }
+      `}</style>
     </div>
   );
 };
