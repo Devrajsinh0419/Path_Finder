@@ -2,10 +2,10 @@
 module.exports = {
   darkMode: ["class"],
   content: [
-    './pages/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}',
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
   ],
   prefix: "",
   theme: {
@@ -15,49 +15,62 @@ module.exports = {
       screens: {
         "2xl": "1400px",
       },
-    },
+    },  
     extend: {
       colors: {
-        border: "hsl(220 13% 91%)",
-        input: "hsl(220 13% 91%)",
-        ring: "hsl(262 83% 58%)",
-        background: "hsl(0 0% 98%)",
-        foreground: "hsl(224 71% 4%)",
-        gray: "#F5F6FA",
+        /* Base */
+        background: "hsl(253.6,100%,95.7%)",
+        foreground: "hsl(240 15% 12%)",
+
+        /* Surfaces */
+        card: {
+          DEFAULT: "hsl(0 0% 100%)",
+          foreground: "hsl(240 15% 12%)",
+        },
+        popover: {
+          DEFAULT: "hsl(0 0% 100%)",
+          foreground: "hsl(240 15% 12%)",
+        },
+
+        /* Brand */
         primary: {
           DEFAULT: "hsl(262 83% 58%)",
           foreground: "hsl(0 0% 100%)",
         },
+        accent: {
+          DEFAULT: "hsl(262 70% 65%)",
+          foreground: "hsl(0 0% 100%)",
+        },
+
+        /* UI */
         secondary: {
-          DEFAULT: "hsl(220 14% 96%)",
-          foreground: "hsl(220 9% 46%)",
+          DEFAULT: "hsl(240 16% 96%)",
+          foreground: "hsl(240 10% 40%)",
+        },
+        muted: {
+          DEFAULT: "hsl(240 16% 95%)",
+          foreground: "hsl(240 8% 45%)",
         },
         destructive: {
           DEFAULT: "hsl(0 84% 60%)",
           foreground: "hsl(0 0% 98%)",
         },
-        muted: {
-          DEFAULT: "hsl(220 14% 96%)",
-          foreground: "hsl(220 9% 46%)",
-        },
-        accent: {
-          DEFAULT: "hsl(262 83% 58%)",
-          foreground: "hsl(0 0% 100%)",
-        },
-        popover: {
-          DEFAULT: "hsl(0 0% 100%)",
-          foreground: "hsl(224 71% 4%)",
-        },
-        card: {
-          DEFAULT: "hsl(0 0% 100%)",
-          foreground: "hsl(224 71% 4%)",
-        },
+
+        /* Form */
+        border: "hsl(240 14% 90%)",
+        input: "hsl(240 14% 94%)",
+        ring: "hsl(262 83% 58%)",
+
+        /* Utility */
+        gray: "#F4F5FB",
       },
+
       borderRadius: {
         lg: "0.5rem",
         md: "calc(0.5rem - 2px)",
         sm: "calc(0.5rem - 4px)",
       },
+
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -78,15 +91,17 @@ module.exports = {
           },
         },
       },
+
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in-up": "fade-in-up 0.6s ease-out",
       },
+
       fontFamily: {
         display: ["Space Grotesk", "sans-serif"],
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
-}
+};

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import Stars from '@/components/Stars';
 import { 
   TrendingUp, 
   BookOpen, 
@@ -100,6 +101,7 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-gray p-6">
       <div className="max-w-7xl mx-auto">
+        <Stars />
         {/* Header with Profile Icon */}
         <div className="mb-8 flex items-center justify-between">
           <div>
