@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Eye, EyeOff } from 'lucide-react'; // Add Eye icons
+import { Sparkles, Eye, EyeOff } from 'lucide-react'; 
 import Stars from '@/components/Stars';
 import heroBg from '@/assets/hero-bg.jpg';
 import api from '@/lib/api';
@@ -11,7 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // Add this state
+  const [showPassword, setShowPassword] = useState(false); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -107,7 +107,7 @@ const Login = () => {
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
             <Sparkles className="w-6 h-6 text-accent" />
-            <span className="font-display text-xl font-bold">PathFinders</span>
+            <span className="font-display text-xl font-bold">PathFinder</span>
           </div>
 
           {/* Tabs */}

@@ -33,8 +33,8 @@ const Stars = () => {
         
         .star {
           position: absolute;
-          width: 2px;
-          height: 2px;
+          width: 7px;
+          height: 7px;
           background: hsl(262, 83%, 58%);
           border-radius: 50%;
           animation: twinkle 3s infinite;
