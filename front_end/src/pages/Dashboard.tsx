@@ -128,7 +128,7 @@ export function Dashboard() {
         {/* Main Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* CGPA Card */}
-          <div className="glass-card-strong p-6 shadow-lg">
+          <div className="backdrop-blur-2xl rounded-2xl p-8 shadow-lg glass-card-strong border border-white/30">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">CGPA</h3>
               <Star className="w-5 h-5 text-accent" />
@@ -140,7 +140,7 @@ export function Dashboard() {
           </div>
         {/* <br /> */}
           {/* Recommended Domain */}
-          <div className="glass-card-strong p-6 shadow-lg">
+          <div className="backdrop-blur-2xl rounded-2xl p-8 shadow-lg glass-card-strong border border-white/30">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Best Match</h3>
               <Target className="w-5 h-5 text-accent" />
@@ -154,7 +154,7 @@ export function Dashboard() {
           </div>
 
           {/* Strong Subject */}
-          <div className="glass-card-strong p-6 shadow-lg">
+          <div className="backdrop-blur-2xl rounded-2xl p-8 shadow-lg glass-card-strong border border-white/30">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Top Performer</h3>
               <TrendingUp className="w-5 h-5 text-accent" />
@@ -169,7 +169,7 @@ export function Dashboard() {
         </div>
 
         {/* Career Recommendations */}
-        <div className="glass-card-strong p-6 mb-8 shadow-lg">
+        <div className="backdrop-blur-2xl rounded-2xl p-8 shadow-lg glass-card-strong border border-white/30">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Target className="w-6 h-6 text-accent" />
             Career Domain Recommendations
@@ -208,9 +208,9 @@ export function Dashboard() {
             View Learning Roadmap
           </Button>
         </div>
-
+<br />
         {/* Semester Progress */}
-        <div className="glass-card-strong p-6 mb-8 shadow-lg">
+        <div className="backdrop-blur-2xl rounded-2xl p-8 shadow-lg glass-card-strong border border-white/30">
           <h3 className="text-xl font-bold mb-4">Semester-wise Progress</h3>
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
             {analysis.semester_scores?.map((sem) => (
@@ -244,10 +244,10 @@ export function Dashboard() {
             </p>
           )}
         </div>
-
+<br />
         {/* Areas for Improvement */}
         {analysis.domain_recommendation?.weak_areas && analysis.domain_recommendation.weak_areas.length > 0 && (
-          <div className="glass-card-strong p-6 shadow-lg">
+          <div className="backdrop-blur-2xl rounded-2xl p-8 shadow-lg glass-card-strong border border-white/30">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <AlertCircle className="w-6 h-6 text-yellow-500" />
               Areas for Improvement

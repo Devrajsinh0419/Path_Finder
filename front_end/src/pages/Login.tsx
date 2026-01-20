@@ -127,7 +127,7 @@ const Login = () => {
             </Link>
           </div>
 
-          <div className="glass-card-strong p-8">
+          <div className="backdrop-blur-2xl rounded-2xl p-8 shadow-lg glass-card-strong border border-white/30">
             <h2 className="font-display text-3xl font-bold mb-2 text-center">
               Welcome Back
             </h2>
