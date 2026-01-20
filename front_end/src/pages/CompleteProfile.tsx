@@ -1,4 +1,3 @@
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -35,12 +34,29 @@ const FormSchema = z.object({
 export function CompleteProfile() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  
+  // Get user data from localStorage
+  const getUserData = () => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
+  const user = getUserData();
+  
+  // Create full name from first and last name
+  const fullName = user?.first_name && user?.last_name 
+    ? `${user.first_name} ${user.last_name}`.trim()
+    : '';
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       enrollment_number: "",
       institute_name: "",
-      full_name: "",
+      full_name: fullName, // Auto-fill from signup
       current_semester: "",
     },
   });
@@ -52,7 +68,8 @@ export function CompleteProfile() {
         if (response.data) {
           form.reset({
             ...response.data,
-            current_semester: response.data.current_semester.toString(),
+            current_semester: response.data.current_semester?.toString() || "",
+            full_name: response.data.full_name || fullName, // Use existing or signup data
           });
         }
       } catch (error) {
@@ -61,7 +78,7 @@ export function CompleteProfile() {
       }
     };
     fetchProfile();
-  }, [form]);
+  }, [form, fullName]);
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setLoading(true);
@@ -73,7 +90,7 @@ export function CompleteProfile() {
       toast({
         title: "Profile completed successfully!",
       });
-      navigate('/upload-results');
+      navigate("/upload-results");
     } catch (error) {
       console.error(error);
       toast({
@@ -87,10 +104,16 @@ export function CompleteProfile() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-lg space-y-6 p-8">
-            <h2 className="text-2xl font-bold text-center">Complete Your Profile</h2>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-lg space-y-6 glass-card-strong p-8">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold">Complete Your Profile</h2>
+            <p className="text-muted-foreground text-sm mt-2">
+              Just a few more details to get started
+            </p>
+          </div>
+
           <FormField
             control={form.control}
             name="full_name"
@@ -104,6 +127,7 @@ export function CompleteProfile() {
               </FormItem>
             )}
           />
+          
           <FormField
             control={form.control}
             name="enrollment_number"
@@ -117,6 +141,7 @@ export function CompleteProfile() {
               </FormItem>
             )}
           />
+          
           <FormField
             control={form.control}
             name="institute_name"
@@ -130,6 +155,7 @@ export function CompleteProfile() {
               </FormItem>
             )}
           />
+          
           <FormField
             control={form.control}
             name="current_semester"
@@ -137,15 +163,22 @@ export function CompleteProfile() {
               <FormItem>
                 <FormLabel>Current Semester</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter your current semester" {...field} type="number" />
+                  <Input 
+                    placeholder="Enter your current semester" 
+                    {...field} 
+                    type="number" 
+                    min="1"
+                    max="8"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Saving..." : "Submit"}
-            </Button>
+          
+          <Button type="submit" disabled={loading} className="w-full" variant="accent">
+            {loading ? "Saving..." : "Continue"}
+          </Button>
         </form>
       </Form>
     </div>

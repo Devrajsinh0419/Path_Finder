@@ -78,7 +78,7 @@ const Login = () => {
         className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
-        <div className="absolute inset-0 bg-background/20" />
+        <div className="absolute inset-0 bg-background/5" />
         <Stars />
         
         <div className="relative z-10 flex flex-col items-start justify-center px-16">
