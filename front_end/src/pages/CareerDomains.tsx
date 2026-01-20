@@ -228,7 +228,7 @@ export function CareerDomains() {
             return (
               <div
                 key={index}
-                className={`glass-card-strong p-6 hover:scale-105 transition-transform cursor-pointer ${
+                className={`glass-card-strong   rounded-2xl p-6 hover:scale-105 transition-transform cursor-pointer ${
                   isRecommended ? 'ring-2 ring-accent' : ''
                 }`}
                 onClick={() => window.open(domain.roadmapUrl, '_blank')}
