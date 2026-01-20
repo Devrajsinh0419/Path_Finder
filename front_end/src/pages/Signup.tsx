@@ -89,7 +89,7 @@ const Signup = () => {
         <div className="absolute inset-0 bg-background/5" />
         
         
-        <div className="relative z-10 flex flex-col items-start justify-center px-16">
+        <div className="relative z-10 flex flex-col items-start justify-center px-16 ">
           <Link to="/" className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-accent" />
@@ -134,7 +134,7 @@ const Signup = () => {
             </Link>
           </div>
 
-          <div className="glass-card-strong p-8">
+          <div className="backdrop-blur-2xl rounded-2xl p-8 shadow-lg glass-card-strong border border-white/30">
             <h2 className="font-display text-3xl font-bold mb-2 text-center">
               Get Started
             </h2>
