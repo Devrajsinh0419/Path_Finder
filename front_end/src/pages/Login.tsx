@@ -73,13 +73,14 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex">
+      <Stars />
       {/* Left Panel - Branding */}
       <div
         className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
         <div className="absolute inset-0 bg-background/5" />
-        <Stars />
+        
         
         <div className="relative z-10 flex flex-col items-start justify-center px-16">
           <Link to="/" className="flex items-center gap-3 mb-8">
