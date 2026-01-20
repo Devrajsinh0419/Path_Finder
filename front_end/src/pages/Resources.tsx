@@ -339,7 +339,7 @@ export function Resources() {
                   {category.courses.map((course, index) => (
                     <div
                       key={index}
-                      className="glass-card-strong p-6 hover:shadow-xl transition-all group cursor-pointer"
+                      className="glass-card-strong  rounded-2xl p-6 hover:shadow-xl transition-all group cursor-pointer"
                       onClick={() => window.open(course.url, '_blank')}
                     >
                       <div className="flex items-start justify-between mb-4">
