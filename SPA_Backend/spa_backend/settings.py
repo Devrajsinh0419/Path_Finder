@@ -127,6 +127,8 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+MARKS_ENCRYPTION_KEY = os.getenv("MARKS_ENCRYPTION_KEY").encode()
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
