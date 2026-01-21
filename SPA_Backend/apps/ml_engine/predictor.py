@@ -60,37 +60,3 @@ def predict_domain(feature_dict):
         if sorted_scores and sorted_scores[0][1] > 0:
             return sorted_scores[0][0], 0.0
         return "backend", 0.0
-def predict_domain(marks):
-    scores = calculate_domain_scores(marks)
-
-    backend = scores.get("backend", 0)
-    web = scores.get("web", 0)
-    data = scores.get("data", 0)
-    soft = scores.get("soft", 0)
-
-    domain_scores = {
-        "BACKEND": backend,
-        "WEB": web,
-        "DATA": data,
-        "SOFT": soft,
-    }
-
-    sorted_domains = sorted(
-        domain_scores.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )
-
-    primary = sorted_domains[0][0]
-    secondary = sorted_domains[1][0]
-
-    confidence = round(
-        sorted_domains[0][1] - sorted_domains[1][1], 2
-    )
-
-    return {
-        "primary_domain": primary,
-        "secondary_domain": secondary,
-        "confidence": confidence,
-        "scores": domain_scores,
-    }

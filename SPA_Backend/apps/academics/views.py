@@ -317,23 +317,6 @@ class StudentAnalysisView(APIView):
             return 'F'
     
     def analyze_domain(self, results):
-<<<<<<< HEAD
-        marks_map = {}
-
-        NORMALIZE = {
-            "DATA STRUCTURE": "DATA STRUCTURES",
-            "OPERATING SYSTEM": "OPERATING SYSTEMS",
-            "DATABASE MANAGEMENT SYSTEM": "DBMS",
-    }
-
-        for result in results:
-            subject_key = result.subject.upper().strip()
-            subject_key = NORMALIZE.get(subject_key, subject_key)
-            marks_map[subject_key] = result.marks
-
-        prediction = predict_domain(marks_map)
-
-=======
         """Analyze and recommend career domain based on ML prediction"""
         
         # Initialize subject category scores
@@ -461,7 +444,6 @@ class StudentAnalysisView(APIView):
             confidence = 0
         
         # Find weak and strong subjects
->>>>>>> b64bba42f9afdc1b6bf44f32ab13421f2ce201d7
         weak_subjects = sorted(results, key=lambda x: x.marks)[:3]
         weak_areas = [result.subject for result in weak_subjects]
         
