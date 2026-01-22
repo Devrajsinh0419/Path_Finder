@@ -10,6 +10,8 @@ import re
 from .models import SemesterResult, StudentProfile
 from .serializers import SemesterResultSerializer, StudentProfileSerializer
 from apps.ml_engine.predictor import predict_domain
+from apps.academics.pdf_extractor import extract_grades_from_pdf
+
 
 class SemesterResultCreateView(generics.CreateAPIView):
     serializer_class = SemesterResultSerializer
@@ -55,167 +57,100 @@ class StudentProfileView(APIView):
 
 class UploadResultPDFView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     def post(self, request):
-        # Get all uploaded PDFs (sem1 to sem6)
         uploaded_semesters = []
         total_subjects = 0
-        
-        for sem_num in range(1, 7):
-            field_name = f'semester_{sem_num}'
-            if field_name in request.FILES:
-                pdf_file = request.FILES[field_name]
-                
-                # Validate file type
-                if not pdf_file.name.endswith('.pdf'):
-                    return Response(
-                        {"error": f"File for semester {sem_num} must be a PDF"},
-                        status=status.HTTP_400_BAD_REQUEST
+
+        for sem in range(1, 7):
+            field = f"semester_{sem}"
+            if field not in request.FILES:
+                continue
+
+            pdf_file = request.FILES[field]
+
+            if not pdf_file.name.lower().endswith(".pdf"):
+                return Response(
+                    {"error": f"Semester {sem} file must be a PDF"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                extracted = extract_grades_from_pdf(pdf_file)
+
+                SemesterResult.objects.filter(
+                    student=request.user,
+                    semester=sem
+                ).delete()
+
+                saved_subjects = []
+
+                for item in extracted:
+                    marks = self.grade_to_marks(item["grade"])
+                    encrypted_marks = encrypt_value(marks)
+
+                    SemesterResult.objects.create(
+                        student=request.user,
+                        semester=sem,
+                        subject=item["subject"],
+                        marks=encrypted_marks
                     )
-                
-                try:
-                    # Extract and parse PDF
-                    pdf_text = self.extract_text_from_pdf(pdf_file)
-                    parsed_data = self.parse_grade_sheet(pdf_text, sem_num)
-                    
-                    if parsed_data:
-                        # Save results
-                        saved = self.save_results(request.user, parsed_data, sem_num)
-                        uploaded_semesters.append({
-                            'semester': sem_num,
-                            'subjects_count': len(saved),
-                            'subjects': saved
-                        })
-                        total_subjects += len(saved)
-                    
-                except Exception as e:
-                    print(f"Error processing semester {sem_num}: {str(e)}")
-                    return Response(
-                        {"error": f"Failed to process semester {sem_num}: {str(e)}"},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-        
+
+                    saved_subjects.append({
+                        "subject": item["subject"],
+                        "grade": item["grade"]
+                    })
+
+                uploaded_semesters.append({
+                    "semester": sem,
+                    "subjects_count": len(saved_subjects),
+                    "subjects": saved_subjects
+                })
+
+                total_subjects += len(saved_subjects)
+
+            except Exception as e:
+                return Response(
+                    {"error": f"Semester {sem} failed: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
         if not uploaded_semesters:
             return Response(
-                {"error": "No valid PDF files uploaded"},
+                {"error": "No valid PDFs uploaded"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # Analyze all uploaded data
-        all_results = SemesterResult.objects.filter(student=request.user)
-        domain_recommendation = self.analyze_and_recommend(all_results)
-        
-        return Response({
-            "message": f"Successfully processed {len(uploaded_semesters)} semester(s)",
-            "uploaded_semesters": uploaded_semesters,
-            "total_subjects": total_subjects,
-            "recommendation": domain_recommendation
-        }, status=status.HTTP_200_OK)
 
-    def extract_text_from_pdf(self, pdf_file):
-        """Extract text from PDF file"""
-        pdf_reader = PyPDF2.PdfReader(pdf_file)
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
-        return text
+        marks_map = {}
 
-    def parse_grade_sheet(self, text, semester_num):
-        """Parse the grade sheet text to extract subjects and grades"""
-        subjects = []
-        
-        # Pattern to match subject lines
-        # Example: 03606305 Information Security 3.00 A 8.00 24.00
-        pattern = r'(\d+)\s+([A-Za-z\s\-\(\)\.#]+?)\s+(\d+\.\d+)\s+([A-Z\+]+)\s+(\d+\.\d+)\s+(\d+\.\d+)'
-        
-        matches = re.findall(pattern, text)
-        
-        for match in matches:
-            code, name, credit, grade, grade_point, credit_point = match
-            subjects.append({
-                'code': code.strip(),
-                'name': name.strip(),
-                'credit': float(credit),
-                'grade': grade.strip(),
-                'grade_point': float(grade_point),
-                'credit_point': float(credit_point),
-                'semester': semester_num
-            })
-        
-        return subjects
+        for r in SemesterResult.objects.filter(student=request.user):
+            marks_map[r.subject.upper()] = decrypt_value(r.marks)
 
-    def save_results(self, user, subjects, semester_num):
-        """Save parsed subjects to database"""
-        saved = []
-        
-        # First, delete existing results for this semester
-        SemesterResult.objects.filter(student=user, semester=semester_num).delete()
-        
-        for subject in subjects:
-            marks = self.grade_to_marks(subject['grade'])
-            
-            result = SemesterResult.objects.create(
-                student=user,
-                semester=semester_num,
-                subject=subject['name'],
-                marks=marks
-            )
-            saved.append({
-                'subject': subject['name'],
-                'grade': subject['grade'],
-                'marks': marks
-            })
-        
-        return saved
+        prediction = predict_domain(marks_map)
+
+        return Response(
+            {
+                "message": "Results processed successfully",
+                "uploaded_semesters": uploaded_semesters,
+                "total_subjects": total_subjects,
+                "domain_recommendation": prediction
+            },
+            status=status.HTTP_200_OK
+        )
 
     def grade_to_marks(self, grade):
-        """Convert grade letter to approximate marks"""
-        grade_mapping = {
-            'O': 95,
-            'A+': 85,
-            'A': 75,
-            'B+': 65,
-            'B': 55,
-            'P': 45,
-            'F': 30
+        grade_map = {
+            "O": 95,
+            "A+": 85,
+            "A": 75,
+            "B+": 65,
+            "B": 55,
+            "P": 45,
+            "F": 30
         }
-        return grade_mapping.get(grade, 50)
-
-    def analyze_and_recommend(self, results):
-        """Analyze subjects and recommend career domain"""
-        domain_keywords = {
-            'AI/ML': ['machine learning', 'artificial intelligence', 'data mining', 'neural', 'deep learning'],
-            'Web Development': ['web', 'internet', 'html', 'javascript', 'react', '.net', 'programming'],
-            'Cybersecurity': ['security', 'cryptography', 'network security', 'ethical hacking', 'information security'],
-            'IoT': ['iot', 'internet of things', 'embedded', 'sensors'],
-            'Data Science': ['data', 'statistics', 'analytics', 'visualization', 'mining'],
-            'Software Engineering': ['software', 'engineering', 'design patterns', 'testing', 'project']
-        }
-        
-        domain_scores = {domain: 0 for domain in domain_keywords.keys()}
-        
-        for result in results:
-            subject_name = result.subject.lower()
-            marks = result.marks
-            
-            for domain, keywords in domain_keywords.items():
-                for keyword in keywords:
-                    if keyword in subject_name:
-                        domain_scores[domain] += marks
-                        break
-        
-        sorted_domains = sorted(domain_scores.items(), key=lambda x: x[1], reverse=True)
-        top_domains = [
-            {'domain': domain, 'score': round(score, 2)} 
-            for domain, score in sorted_domains[:3] 
-            if score > 0
-        ]
-        
-        return {
-            'top_domains': top_domains,
-            'recommendation': top_domains[0]['domain'] if top_domains else 'Software Engineering'
-        }
-
+        return grade_map.get(grade, 50)
+    
 class StudentAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
 
