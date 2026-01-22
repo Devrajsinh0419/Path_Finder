@@ -3,6 +3,17 @@ import re
 
 SUBJECT_CODE_REGEX = re.compile(r"^\d{8}$")
 
+GRADE_TO_MARKS = {
+    "O": 95,
+    "A+": 85,
+    "A": 75,
+    "B+": 65,
+    "B": 55,
+    "C": 45,
+    "P": 40,
+    "F": 0,
+}
+
 def extract_grades_from_pdf(pdf_file):
     extracted = []
 
@@ -23,36 +34,25 @@ def extract_grades_from_pdf(pdf_file):
 
                     code = safe_strip(row[0])
                     name = safe_strip(row[1])
-                    credit = safe_float(row[2])
                     grade = safe_strip(row[3])
-                    grade_point = safe_float(row[4])
 
                     if not SUBJECT_CODE_REGEX.match(code):
                         continue
 
-                    if grade_point is None:
+                    marks = GRADE_TO_MARKS.get(grade.upper())
+                    if marks is None:
                         continue
 
                     extracted.append({
-                        "code": code,
                         "subject": name,
-                        "credit": credit,
-                        "grade": grade,
-                        "grade_point": grade_point
+                        "marks": marks,
                     })
 
     if not extracted:
         raise ValueError("No grade data extracted from PDF")
 
-    return extracted
+    return {item["subject"]: item["marks"] for item in extracted}
 
 
 def safe_strip(val):
     return val.strip() if val else ""
-
-
-def safe_float(val):
-    try:
-        return float(val)
-    except:
-        return None
