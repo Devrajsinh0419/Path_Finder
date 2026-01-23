@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { 
   Select,
   SelectContent,
@@ -11,12 +10,16 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import api from '@/lib/api';
-import { ArrowLeft, Save, Plus, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Upload, CheckCircle, Circle } from 'lucide-react';
 
-interface SubjectMark {
+interface SubjectGrade {
   subject: string;
-  marks: string;
   grade: string;
+  marks: number;
+}
+
+interface SemesterData {
+  [semester: number]: SubjectGrade[];
 }
 
 const SEMESTER_SUBJECTS = {
@@ -93,62 +96,89 @@ const SEMESTER_SUBJECTS = {
   ],
 };
 
-const getGradeFromMarks = (marks: number): string => {
-  if (marks >= 90) return 'O';
-  if (marks >= 80) return 'A+';
-  if (marks >= 70) return 'A';
-  if (marks >= 60) return 'B+';
-  if (marks >= 50) return 'B';
-  if (marks >= 40) return 'P';
-  return 'F';
+const GRADES = [
+  { value: 'O', label: 'O - Outstanding (90-100)', marks: 95, color: 'bg-green-600' },
+  { value: 'A+', label: 'A+ - Excellent (80-89)', marks: 85, color: 'bg-green-500' },
+  { value: 'A', label: 'A - Very Good (70-79)', marks: 75, color: 'bg-blue-500' },
+  { value: 'B+', label: 'B+ - Good (60-69)', marks: 65, color: 'bg-blue-400' },
+  { value: 'B', label: 'B - Above Average (50-59)', marks: 55, color: 'bg-yellow-500' },
+  { value: 'P', label: 'P - Pass (40-49)', marks: 45, color: 'bg-orange-500' },
+  { value: 'F', label: 'F - Fail (<40)', marks: 30, color: 'bg-red-500' },
+];
+
+const getMarksFromGrade = (grade: string): number => {
+  const gradeObj = GRADES.find(g => g.value === grade);
+  return gradeObj?.marks || 0;
+};
+
+const getGradeColor = (grade: string): string => {
+  const gradeObj = GRADES.find(g => g.value === grade);
+  return gradeObj?.color || 'bg-gray-500';
 };
 
 export function ManualMarksEntry() {
   const navigate = useNavigate();
   const [selectedSemester, setSelectedSemester] = useState<number>(1);
-  const [subjectMarks, setSubjectMarks] = useState<SubjectMark[]>([]);
+  const [allSemesterData, setAllSemesterData] = useState<SemesterData>({});
   const [loading, setLoading] = useState(false);
+
+  const initializeSemester = (sem: number) => {
+    if (!allSemesterData[sem]) {
+      const subjects = SEMESTER_SUBJECTS[sem as keyof typeof SEMESTER_SUBJECTS];
+      return subjects.map(subject => ({
+        subject,
+        grade: '',
+        marks: 0
+      }));
+    }
+    return allSemesterData[sem];
+  };
+
+  const getCurrentSemesterData = () => {
+    return initializeSemester(selectedSemester);
+  };
 
   const handleSemesterChange = (semester: string) => {
     const sem = parseInt(semester);
-    setSelectedSemester(sem);
     
-    // Initialize all subjects for the semester
-    const subjects = SEMESTER_SUBJECTS[sem as keyof typeof SEMESTER_SUBJECTS];
-    setSubjectMarks(subjects.map(subject => ({
-      subject,
-      marks: '',
-      grade: ''
-    })));
-  };
-
-  const handleMarksChange = (index: number, marks: string) => {
-    const newSubjectMarks = [...subjectMarks];
-    const marksNum = parseInt(marks) || 0;
-    
-    // Validate marks (0-100)
-    if (marks !== '' && (marksNum < 0 || marksNum > 100)) {
-      toast({
-        title: 'Invalid Marks',
-        description: 'Marks must be between 0 and 100',
-        variant: 'destructive',
+    // If switching to a new semester that hasn't been initialized, initialize it
+    if (!allSemesterData[sem]) {
+      const subjects = SEMESTER_SUBJECTS[sem as keyof typeof SEMESTER_SUBJECTS];
+      setAllSemesterData({
+        ...allSemesterData,
+        [sem]: subjects.map(subject => ({
+          subject,
+          grade: '',
+          marks: 0
+        }))
       });
-      return;
     }
     
-    newSubjectMarks[index].marks = marks;
-    newSubjectMarks[index].grade = marks ? getGradeFromMarks(marksNum) : '';
-    setSubjectMarks(newSubjectMarks);
+    setSelectedSemester(sem);
+  };
+
+  const handleGradeChange = (index: number, grade: string) => {
+    const currentData = getCurrentSemesterData();
+    const newData = [...currentData];
+    newData[index].grade = grade;
+    newData[index].marks = getMarksFromGrade(grade);
+    
+    setAllSemesterData({
+      ...allSemesterData,
+      [selectedSemester]: newData
+    });
   };
 
   const handleSubmit = async () => {
-    // Validate that at least one subject has marks
-    const hasMarks = subjectMarks.some(sm => sm.marks !== '');
+    // Check if any semester has grades
+    const hasAnyGrades = Object.values(allSemesterData).some(semData => 
+      semData.some(sg => sg.grade !== '')
+    );
     
-    if (!hasMarks) {
+    if (!hasAnyGrades) {
       toast({
-        title: 'No Marks Entered',
-        description: 'Please enter marks for at least one subject',
+        title: 'No Grades Selected',
+        description: 'Please select grades for at least one subject',
         variant: 'destructive',
       });
       return;
@@ -157,31 +187,38 @@ export function ManualMarksEntry() {
     setLoading(true);
 
     try {
-      // Filter out subjects without marks
-      const validSubjects = subjectMarks.filter(sm => sm.marks !== '');
-      
-      // Send to backend
-      const response = await api.post('/academics/manual-marks/', {
-        semester: selectedSemester,
-        subjects: validSubjects.map(sm => ({
-          subject: sm.subject,
-          marks: parseInt(sm.marks),
-          grade: sm.grade
-        }))
-      });
+      // Submit all semesters with data
+      const semestersToSubmit = Object.entries(allSemesterData).filter(([_, semData]) => 
+        semData.some(sg => sg.grade !== '')
+      );
+
+      for (const [semester, semData] of semestersToSubmit) {
+        const validSubjects = semData.filter(sg => sg.grade !== '');
+        
+        if (validSubjects.length > 0) {
+          await api.post('/academics/manual-marks/', {
+            semester: parseInt(semester),
+            subjects: validSubjects.map(sg => ({
+              subject: sg.subject,
+              marks: sg.marks,
+              grade: sg.grade
+            }))
+          });
+        }
+      }
 
       toast({
         title: 'Success!',
-        description: `Marks for Semester ${selectedSemester} saved successfully`,
+        description: `Grades for ${semestersToSubmit.length} semester(s) saved successfully`,
       });
 
       // Navigate to dashboard
       navigate('/dashboard');
     } catch (error: any) {
-      console.error('Error saving marks:', error);
+      console.error('Error saving grades:', error);
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to save marks',
+        description: error.response?.data?.error || 'Failed to save grades',
         variant: 'destructive',
       });
     } finally {
@@ -189,18 +226,31 @@ export function ManualMarksEntry() {
     }
   };
 
-  const calculateSGPA = () => {
-    const validMarks = subjectMarks.filter(sm => sm.marks !== '');
-    if (validMarks.length === 0) return 0;
+  const calculateSGPA = (semData: SubjectGrade[]) => {
+    const validGrades = semData.filter(sg => sg.grade !== '');
+    if (validGrades.length === 0) return 0;
     
-    const totalMarks = validMarks.reduce((sum, sm) => sum + parseInt(sm.marks), 0);
-    const avgMarks = totalMarks / validMarks.length;
+    const totalMarks = validGrades.reduce((sum, sg) => sum + sg.marks, 0);
+    const avgMarks = totalMarks / validGrades.length;
     return ((avgMarks / 100) * 10).toFixed(2);
   };
 
+  const getSemesterProgress = (sem: number) => {
+    const semData = allSemesterData[sem];
+    if (!semData) return { filled: 0, total: 0, percentage: 0 };
+    
+    const filled = semData.filter(sg => sg.grade !== '').length;
+    const total = semData.length;
+    const percentage = (filled / total) * 100;
+    
+    return { filled, total, percentage };
+  };
+
+  const currentSemesterData = getCurrentSemesterData();
+
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <Button
@@ -212,153 +262,159 @@ export function ManualMarksEntry() {
             Back
           </Button>
           
-          <h1 className="text-4xl font-bold mb-2">Manual Marks Entry</h1>
+          <h1 className="text-4xl font-bold mb-2">Manual Grade Entry</h1>
           <p className="text-muted-foreground">
-            Enter your marks manually for each subject
+            Select grades for each subject. You can fill multiple semesters before saving.
           </p>
         </div>
 
-        {/* Semester Selection */}
-        <div className="glass-card-strong p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Select Semester
-              </label>
-              <Select onValueChange={handleSemesterChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose semester" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5, 6].map((sem) => (
-                    <SelectItem key={sem} value={sem.toString()}>
-                      Semester {sem}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar - Semester Progress */}
+          <div className="lg:col-span-1">
+            <div className="glass-card-strong p-6 sticky top-6">
+              <h3 className="font-semibold mb-4">Semester Progress</h3>
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5, 6].map((sem) => {
+                  const progress = getSemesterProgress(sem);
+                  const isComplete = progress.filled > 0;
+                  
+                  return (
+                    <button
+                      key={sem}
+                      onClick={() => handleSemesterChange(sem.toString())}
+                      className={`w-full text-left p-3 rounded-lg transition-all ${
+                        selectedSemester === sem
+                          ? 'bg-accent text-white'
+                          : 'bg-accent/5 hover:bg-accent/10'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium">Semester {sem}</span>
+                        {isComplete ? (
+                          <CheckCircle className="w-4 h-4" />
+                        ) : (
+                          <Circle className="w-4 h-4" />
+                        )}
+                      </div>
+                      <div className="text-xs opacity-80">
+                        {progress.filled}/{progress.total} subjects
+                      </div>
+                      {progress.filled > 0 && (
+                        <div className="w-full bg-white/20 rounded-full h-1.5 mt-2">
+                          <div
+                            className="bg-white h-1.5 rounded-full transition-all"
+                            style={{ width: `${progress.percentage}%` }}
+                          />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
-            {subjectMarks.length > 0 && (
-              <div className="flex items-end">
-                <div className="glass-card p-4 w-full">
-                  <p className="text-sm text-muted-foreground mb-1">Estimated SGPA</p>
-                  <p className="text-3xl font-bold text-accent">{calculateSGPA()}</p>
+              {/* Save Button in Sidebar */}
+              <Button
+                onClick={handleSubmit}
+                disabled={loading || Object.values(allSemesterData).every(semData => 
+                  !semData.some(sg => sg.grade !== '')
+                )}
+                variant="accent"
+                className="w-full mt-6"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save All Grades
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Main Content - Subject List */}
+          <div className="lg:col-span-3">
+            <div className="glass-card-strong p-6 mb-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold">
+                    Semester {selectedSemester} Subjects
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {currentSemesterData.filter(sg => sg.grade !== '').length} of {currentSemesterData.length} subjects filled
+                  </p>
+                </div>
+                <div className="glass-card p-4">
+                  <p className="text-xs text-muted-foreground mb-1">SGPA</p>
+                  <p className="text-2xl font-bold text-accent">
+                    {calculateSGPA(currentSemesterData)}
+                  </p>
                 </div>
               </div>
-            )}
+
+              <div className="space-y-3 max-h-[700px] overflow-y-auto pr-2">
+                {currentSemesterData.map((sg, index) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg bg-accent/5 hover:bg-accent/10 transition-colors"
+                  >
+                    <div className="md:col-span-1 flex items-center">
+                      <span className="font-medium text-sm">{sg.subject}</span>
+                    </div>
+                    
+                    <div className="md:col-span-1">
+                      <Select
+                        value={sg.grade}
+                        onValueChange={(grade) => handleGradeChange(index, grade)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select grade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {GRADES.map((grade) => (
+                            <SelectItem key={grade.value} value={grade.value}>
+                              {grade.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="md:col-span-1 flex items-center justify-center">
+                      {sg.grade && (
+                        <div className={`px-4 py-2 rounded-lg font-bold text-white w-full text-center ${getGradeColor(sg.grade)}`}>
+                          {sg.grade} ({sg.marks} marks)
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Grade Legend */}
+              <div className="mt-6 p-4 bg-accent/5 rounded-lg">
+                <p className="text-sm font-medium mb-3">Grade Scale Reference:</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {GRADES.map((grade) => (
+                    <div key={grade.value} className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded flex items-center justify-center text-white font-bold ${grade.color}`}>
+                        {grade.value}
+                      </div>
+                      <div className="text-xs">
+                        <div className="font-semibold">{grade.value}</div>
+                        <div className="text-muted-foreground">{grade.marks} marks</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Subjects Table */}
-        {subjectMarks.length > 0 && (
-          <div className="glass-card-strong p-6 mb-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">
-                Semester {selectedSemester} Subjects
-              </h2>
-              <div className="text-sm text-muted-foreground">
-                {subjectMarks.filter(sm => sm.marks !== '').length} of {subjectMarks.length} subjects filled
-              </div>
-            </div>
-
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
-              {subjectMarks.map((sm, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 rounded-lg bg-accent/5 hover:bg-accent/10 transition-colors"
-                >
-                  <div className="md:col-span-6 flex items-center">
-                    <span className="font-medium">{sm.subject}</span>
-                  </div>
-                  
-                  <div className="md:col-span-3">
-                    <Input
-                      type="number"
-                      placeholder="Enter marks (0-100)"
-                      value={sm.marks}
-                      onChange={(e) => handleMarksChange(index, e.target.value)}
-                      min="0"
-                      max="100"
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div className="md:col-span-3 flex items-center justify-center">
-                    {sm.grade && (
-                      <div className={`px-4 py-2 rounded-lg font-bold text-white ${
-                        sm.grade === 'O' ? 'bg-green-600' :
-                        sm.grade === 'A+' ? 'bg-green-500' :
-                        sm.grade === 'A' ? 'bg-blue-500' :
-                        sm.grade === 'B+' ? 'bg-blue-400' :
-                        sm.grade === 'B' ? 'bg-yellow-500' :
-                        sm.grade === 'P' ? 'bg-orange-500' :
-                        'bg-red-500'
-                      }`}>
-                        Grade: {sm.grade}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Grade Legend */}
-            <div className="mt-6 p-4 bg-accent/5 rounded-lg">
-              <p className="text-sm font-medium mb-2">Grade Scale:</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                <div><span className="font-semibold">O:</span> 90-100</div>
-                <div><span className="font-semibold">A+:</span> 80-89</div>
-                <div><span className="font-semibold">A:</span> 70-79</div>
-                <div><span className="font-semibold">B+:</span> 60-69</div>
-                <div><span className="font-semibold">B:</span> 50-59</div>
-                <div><span className="font-semibold">P:</span> 40-49</div>
-                <div><span className="font-semibold">F:</span> Below 40</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        {subjectMarks.length > 0 && (
-          <div className="flex gap-4">
-            <Button
-              onClick={() => navigate('/upload-results')}
-              variant="outline"
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={loading || !subjectMarks.some(sm => sm.marks !== '')}
-              variant="accent"
-              className="flex-1"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Marks
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-
-        {subjectMarks.length === 0 && (
-          <div className="text-center py-12 glass-card-strong">
-            <Upload className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Select a Semester</h3>
-            <p className="text-muted-foreground">
-              Choose a semester from the dropdown above to start entering marks
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
