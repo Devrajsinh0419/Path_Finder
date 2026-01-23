@@ -13,6 +13,8 @@ import { CompleteProfile } from "./pages/CompleteProfile";
 import { UploadResults } from './pages/UploadResults';
 import { CareerDomains } from './pages/CareerDomains';
 import { Resources } from './pages/Resources';
+import About from "./pages/About";
+import { ManualMarksEntry } from "./pages/ManualMarksEntry";
 
 const App = () => (
   <TooltipProvider>
@@ -30,6 +32,8 @@ const App = () => (
         <Route path="/upload-results" element={<UploadResults />} />
         <Route path="/career-domains" element={<CareerDomains />} />
         <Route path="/resources" element={<Resources />} />
+        <Route path="/about" element={<About />} /> 
+        <Route path="/manual-marks-entry" element={<ManualMarksEntry />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
