@@ -44,7 +44,7 @@ const Navbar = () => {
             <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-accent" />
             </div>
-            <span className="font-display text-xl font-bold tracking-wider">
+            <span className="font-display text-white font-bold tracking-wider">
               PATHFINDER
             </span>
           </Link>
@@ -63,7 +63,7 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4 text-white/80">
             <Link to="/login">
               <Button variant="ghost">Login</Button>
             </Link>

@@ -152,7 +152,26 @@ export function UploadResults() {
               </div>
             ))}
           </div>
-
+            <div className="flex gap-4 mb-6">
+  <Button
+    onClick={handleUpload}
+    disabled={loading || !Object.values(files).some(f => f !== null)}
+    variant="accent"
+    size="lg"
+    className="flex-1"
+  >
+    {loading ? 'Processing...' : 'Upload & Analyze'}
+  </Button>
+  
+  <Button
+    onClick={() => navigate('/manual-marks-entry')}
+    variant="outline"
+    size="lg"
+    className="flex-1"
+  >
+    Enter Marks Manually
+  </Button>
+</div>
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
             <p className="text-sm text-blue-400">
               💡 <strong>Tip:</strong> You can upload results for any semesters you've completed. 

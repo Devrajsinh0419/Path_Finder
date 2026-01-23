@@ -6,17 +6,17 @@ const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
       {/* Background Image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${heroBg})` }}
-      />
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${heroBg})` }}
+        /> 
       
       {/* Overlay gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-background/30  via-transparent to-background/20 " />
 
       {/* Content */}
       <div className="relative z-10 text-center px-4 pt-20">
-        <h1 className="font-display text-6xl md:text-8xl font-bold mb-4 animate-fade-in-up tracking-wider">
+        <h1 className="font-display text-6xl text-white md:text-8xl font-bold mb-4 animate-fade-in-up tracking-wider">
           <span className="block">PATH</span>
           <span className="block">FINDER</span>
         </h1>
@@ -31,8 +31,8 @@ const HeroSection = () => {
               Explore Careers
             </Button>
           </Link>
-          <Link to="/about">
-            <Button variant="hero-outline" size="lg">
+          <Link to="/About">
+            <Button className='text-white' variant="hero-outline" size="lg">
               About Us
             </Button>
           </Link>
