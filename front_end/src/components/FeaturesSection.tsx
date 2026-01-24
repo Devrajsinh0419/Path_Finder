@@ -35,7 +35,7 @@ const FeaturesSection = () => {
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className="feature-card group animate-fade-in-up"
+              className="feature-card-steong group animate-fade-in-up "
               style={{ animationDelay: `${index * 150}ms` }}
             >
               <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors duration-300">
