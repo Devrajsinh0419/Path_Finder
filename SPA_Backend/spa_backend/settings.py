@@ -16,6 +16,7 @@ import os
 from dotenv import load_dotenv
 from datetime import timedelta
 import dj_database_url
+from decouple import config
 
 load_dotenv()
 
@@ -127,7 +128,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-MARKS_ENCRYPTION_KEY = os.getenv("MARKS_ENCRYPTION_KEY").encode()
+MARKS_ENCRYPTION_KEY = config('MARKS_ENCRYPTION_KEY', default='default-dev-key-32-chars-long!!').encode()
 
 
 # Password validation
