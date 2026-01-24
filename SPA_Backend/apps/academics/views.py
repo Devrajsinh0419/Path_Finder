@@ -464,3 +464,14 @@ class ManualMarksEntryView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+
+class HealthCheckView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        return Response({
+            "status": "ok",
+            "service": "PathFinder Backend",
+        })

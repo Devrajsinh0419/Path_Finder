@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SemesterResultCreateView, SemesterResultListView, StudentProfileView, UploadResultPDFView, StudentAnalysisView, ManualMarksEntryView
+from .views import SemesterResultCreateView, SemesterResultListView, StudentProfileView, UploadResultPDFView, StudentAnalysisView, ManualMarksEntryView, HealthCheckView
 
 
 urlpatterns = [
@@ -9,4 +9,6 @@ urlpatterns = [
     path("upload-result-pdf/", UploadResultPDFView.as_view(), name="upload-result-pdf"),
     path('analysis/', StudentAnalysisView.as_view(), name='student-analysis'),
     path('manual-marks/', ManualMarksEntryView.as_view(), name='manual-marks'),
+    path("health/", HealthCheckView.as_view()),
+
 ]
