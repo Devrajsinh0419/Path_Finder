@@ -411,3 +411,54 @@ class StudentAnalysisView(APIView):
         else:
             return 'F'
     
+class ManualMarksEntryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """Save manually entered marks"""
+        try:
+            semester = request.data.get('semester')
+            subjects = request.data.get('subjects', [])
+
+            if not semester or not subjects:
+                return Response(
+                    {"error": "Semester and subjects are required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Delete existing results for this semester
+            SemesterResult.objects.filter(
+                student=request.user,
+                semester=semester
+            ).delete()
+
+            # Save new results
+            saved_subjects = []
+            for subject_data in subjects:
+                result = SemesterResult.objects.create(
+                    student=request.user,
+                    semester=semester,
+                    subject=subject_data['subject'],
+                    marks=subject_data['marks']
+                )
+                saved_subjects.append({
+                    'subject': result.subject,
+                    'marks': result.marks,
+                    'grade': subject_data['grade']
+                })
+
+            return Response({
+                "message": f"Marks for Semester {semester} saved successfully",
+                "semester": semester,
+                "subjects_saved": len(saved_subjects),
+                "subjects": saved_subjects
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            print(f"Error saving manual marks: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
