@@ -6,7 +6,7 @@ const WhatIsSection = () => {
   return (
     <section className="relative py-20 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="glass-card p-8 md:p-12 relative overflow-hidden">
+        <div className="glass-card p-8 md:p-12 relative overflow-hidden rounded-2xl">
           {/* Decorative gradient */}
           <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-accent/5 to-transparent pointer-events-none" />
           
