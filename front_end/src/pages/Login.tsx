@@ -102,7 +102,7 @@ const Login = () => {
 
       {/* Right Panel - Login Form */}
       <div className="flex-1 flex items-center justify-center px-6 py-12 bg-background relative">
-        <Stars />
+        <Stars ></Stars>
         
         <div className="w-full max-w-md animate-fade-in-up">
           {/* Mobile Logo */}

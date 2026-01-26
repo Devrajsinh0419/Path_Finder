@@ -213,7 +213,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             onClick={() => {
               onClose();
               // You can add navigation to edit page here
-              // navigate('/edit-profile');
+              navigate('/input-details');
             }}
           >
             <Edit className="w-4 h-4 mr-2" />
