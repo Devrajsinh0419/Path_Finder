@@ -2,9 +2,6 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 api.interceptors.request.use(
@@ -13,12 +10,17 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('Request config:', config); // Add this debug line
-    console.log('Request data:', config.data); // Add this debug line
+
+    // 🔥 CRITICAL FIX
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
 );
+
 
 api.interceptors.response.use(
   (response) => response,
