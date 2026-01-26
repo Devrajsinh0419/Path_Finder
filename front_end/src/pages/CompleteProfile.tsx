@@ -56,7 +56,7 @@ export function CompleteProfile() {
     defaultValues: {
       enrollment_number: "",
       institute_name: "",
-      full_name: fullName, // Auto-fill from signup
+      full_name: fullName,
       current_semester: "",
     },
   });
@@ -65,15 +65,16 @@ export function CompleteProfile() {
     const fetchProfile = async () => {
       try {
         const response = await api.get("/accounts/complete-profile/");
+        console.log('Fetched profile:', response.data);
         if (response.data) {
           form.reset({
-            ...response.data,
+            enrollment_number: response.data.enrollment_no || "",
+            institute_name: response.data.college_name || "",
+            full_name: response.data.full_name || fullName,
             current_semester: response.data.current_semester?.toString() || "",
-            full_name: response.data.full_name || fullName, // Use existing or signup data
           });
         }
       } catch (error) {
-        // It's okay if it fails, means profile doesn't exist yet
         console.log("No profile found, creating a new one.");
       }
     };
@@ -82,20 +83,34 @@ export function CompleteProfile() {
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setLoading(true);
+    
+    const payload = {
+      full_name: data.full_name,
+      enrollment_no: data.enrollment_number,
+      college_name: data.institute_name,
+      current_semester: parseInt(data.current_semester),
+    };
+    
+    console.log('Submitting payload:', payload);
+    
     try {
-      await api.post("/accounts/complete-profile/", {
-        ...data,
-        current_semester: parseInt(data.current_semester),
-      });
+      const response = await api.post("/accounts/complete-profile/", payload);
+      console.log('Submit response:', response.data);
+      
       toast({
         title: "Profile completed successfully!",
+        description: "Your academic information has been saved.",
       });
-      navigate("/upload-results");
-    } catch (error) {
-      console.error(error);
+      
+      // Navigate to dashboard instead of upload-results
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      console.error('Error response:', error.response?.data);
+      
       toast({
         title: "Something went wrong.",
-        description: "Please try again.",
+        description: error.response?.data?.error || error.response?.data?.message || "Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -168,7 +183,7 @@ export function CompleteProfile() {
                     {...field} 
                     type="number" 
                     min="1"
-                    max="8"
+                    max="6"
                   />
                 </FormControl>
                 <FormMessage />
