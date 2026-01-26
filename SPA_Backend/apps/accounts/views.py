@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny
+from urllib3 import request
 from .serializers import RegisterSerializer, MyTokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView
@@ -100,33 +101,38 @@ class CompleteProfileView(APIView):
             profile = request.user.profile
         except:
             return Response(
-                {"error": "Profile not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        
-        if profile.is_completed:
-            return Response(
-                {"message": "Profile already completed"},
-                status=status.HTTP_200_OK
-            )
-        
+            {"error": "Profile not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # REMOVE the is_completed check to allow updates
+    # if profile.is_completed:
+    #     return Response(
+    #         {"message": "Profile already completed"},
+    #         status=status.HTTP_200_OK
+    #     )
+    
         serializer = ProfileCompletionSerializer(
             profile,
             data=request.data,
             partial=True
         )
-        
+    
         if serializer.is_valid():
             serializer.save()
             return Response(
-                {"message": "Profile completed successfully"},
+                {
+                    "message": "Profile completed successfully",
+                    "profile": serializer.data  # Return the updated profile
+                },
                 status=status.HTTP_200_OK
             )
-        
+    
+        print("Serializer errors:", serializer.errors)  # Debug log
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
-        )
+    )
     
 class StudentProfileView(APIView):
     permission_classes = [IsAuthenticated, IsProfileCompleted]
