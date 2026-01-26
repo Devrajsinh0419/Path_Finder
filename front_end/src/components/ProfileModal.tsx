@@ -35,9 +35,10 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   useEffect(() => {
     if (isOpen) {
+      setLoading(true); 
       fetchProfile();
     }
-  }, [isOpen]);
+  }, [isOpen]); 
 
   const fetchProfile = async () => {
     try {
