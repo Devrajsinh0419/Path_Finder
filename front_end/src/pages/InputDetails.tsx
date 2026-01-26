@@ -17,6 +17,7 @@ const InputDetails = () => {
     firstName: "",
     lastName: "",
     enrollmentNo: "",
+    collegeName: "",
     semester: "",
     year: "",
     branch: "",
@@ -26,26 +27,35 @@ const InputDetails = () => {
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      await api.post("/academics/student-profile/", formData)
-      toast({
-        title: "Profile Submitted",
-        description: "Your profile has been successfully submitted.",
-      })
-      navigate("/upload-results")
-    } catch (error) {
-      toast({
-        title: "Submission Failed",
-        description: "There was an error submitting your profile.",
-        variant: "destructive",
-      })
-      console.error("Error submitting profile:", error)
-    } finally {
-      setLoading(false)
-    }
+  e.preventDefault()
+  setLoading(true)
+  try {
+    // Save to the UserProfile model that the modal uses
+    await api.post("/accounts/complete-profile/", {
+    full_name: `${formData.firstName} ${formData.lastName}`,
+    enrollment_no: formData.enrollmentNo,
+    college_name: formData.collegeName, // NOW CORRECT
+    current_semester: parseInt(formData.semester.replace(/\D/g, '')),
+  })
+    
+    await api.post("/academics/student-profile/", formData)
+    
+    toast({
+      title: "Profile Submitted",
+      description: "Your profile has been successfully submitted.",
+    })
+    navigate("/upload-results")
+  } catch (error) {
+    toast({
+      title: "Submission Failed",
+      description: "There was an error submitting your profile.",
+      variant: "destructive",
+    })
+    console.error("Error submitting profile:", error)
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <div 
@@ -137,6 +147,21 @@ const InputDetails = () => {
                     required
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                    College/Institute Name
+                      <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  placeholder="e.g., GTU, LJ University"
+                  value={formData.collegeName}
+                    onChange={(e) => setFormData({ ...formData, collegeName: e.target.value })}
+                  className="h-12"
+                  required
+                />
               </div>
 
               {/* Academic Information Section */}
