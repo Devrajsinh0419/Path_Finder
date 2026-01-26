@@ -59,7 +59,7 @@ class StudentProfileView(APIView):
 
 class UploadResultPDFView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser]
+    parser_classes = [MultiPartParser , FormParser]
 
     def post(self, request):
         uploaded_semesters = []
