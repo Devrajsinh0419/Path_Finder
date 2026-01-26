@@ -1,4 +1,7 @@
+#views.py
+from urllib import request
 from django.shortcuts import render
+from numpy import rint
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -6,7 +9,6 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.parsers import MultiPartParser, FormParser
 
-import PyPDF2
 import re
 
 from .models import SemesterResult, StudentProfile
@@ -59,9 +61,13 @@ class StudentProfileView(APIView):
 
 class UploadResultPDFView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser , FormParser]
+    parser_classes = [MultiPartParser, FormParser]
 
+    
     def post(self, request):
+        print("FILES:", request.FILES)
+        print("DATA:", request.data)
+
         uploaded_semesters = []
         total_subjects = 0
 
@@ -80,7 +86,10 @@ class UploadResultPDFView(APIView):
 
             try:
                 extracted = extract_grades_from_pdf(pdf_file)
+                print(f"[DEBUG] Extracted data for semester {sem}:", extracted)
 
+                if not extracted:
+                    raise ValueError("PDF parsed but no grade data found (unsupported format)")
                 SemesterResult.objects.filter(
                     student=request.user,
                     semester=sem
@@ -90,18 +99,18 @@ class UploadResultPDFView(APIView):
 
                 for item in extracted:
                     marks = self.grade_to_marks(item["grade"])
-                    encrypted_marks = encrypt_value(marks)
 
-                    SemesterResult.objects.create(
+                    SemesterResult.objects.update_or_create(
                         student=request.user,
                         semester=sem,
                         subject=item["subject"],
-                        marks=encrypted_marks
+                        defaults={'marks': marks}
                     )
 
                     saved_subjects.append({
                         "subject": item["subject"],
-                        "grade": item["grade"]
+                        "grade": item["grade"],
+                        "marks": marks
                     })
 
                 uploaded_semesters.append({
@@ -113,6 +122,8 @@ class UploadResultPDFView(APIView):
                 total_subjects += len(saved_subjects)
 
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 return Response(
                     {"error": f"Semester {sem} failed: {str(e)}"},
                     status=status.HTTP_400_BAD_REQUEST
@@ -125,9 +136,8 @@ class UploadResultPDFView(APIView):
             )
 
         marks_map = {}
-
         for r in SemesterResult.objects.filter(student=request.user):
-            marks_map[r.subject.upper()] = decrypt_value(r.marks)
+            marks_map[r.subject.upper()] = r.marks
 
         prediction = predict_domain(marks_map)
 
@@ -152,6 +162,7 @@ class UploadResultPDFView(APIView):
             "F": 30
         }
         return grade_map.get(grade, 50)
+
     
 class StudentAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
