@@ -149,15 +149,6 @@ export function UploadResults() {
             ))}
           </div>
             <div className="flex gap-4 mb-6">
-  <Button
-    onClick={handleUpload}
-    disabled={loading || !Object.values(files).some(f => f !== null)}
-    variant="accent"
-    size="lg"
-    className="flex-1"
-  >
-    {loading ? 'Processing...' : 'Upload & Analyze'}
-  </Button>
   
   <Button
     onClick={() => navigate('/manual-marks-entry')}
