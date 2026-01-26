@@ -20,6 +20,5 @@ scipy
 
 pdfplumber
 pdfminer.six
-PyPDF2
 
 requests
