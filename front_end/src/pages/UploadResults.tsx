@@ -64,11 +64,7 @@ export function UploadResults() {
         }
       });
 
-      const response = await api.post('/academics/upload-result-pdf/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.post('/academics/upload-result-pdf/', formData,);
 
       toast({
         title: 'Success!',
