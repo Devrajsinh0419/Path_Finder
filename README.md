@@ -91,6 +91,7 @@ It supports **PDF grade sheet uploads**, **manual marks entry**, semester-wise a
 ---
 
 ## 📁 Project Structure (Simplified)
+
 Path_Finder/
 │
 ├── SPA_Backend/
