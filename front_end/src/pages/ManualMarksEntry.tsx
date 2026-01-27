@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import api from '@/lib/api';
-import { ArrowLeft, Save, Upload, CheckCircle, Circle } from 'lucide-react';
+import { ArrowLeft, Save, CheckCircle, Circle } from 'lucide-react';
 
 interface SubjectGrade {
   subject: string;
@@ -141,7 +141,6 @@ export function ManualMarksEntry() {
   const handleSemesterChange = (semester: string) => {
     const sem = parseInt(semester);
     
-    // If switching to a new semester that hasn't been initialized, initialize it
     if (!allSemesterData[sem]) {
       const subjects = SEMESTER_SUBJECTS[sem as keyof typeof SEMESTER_SUBJECTS];
       setAllSemesterData({
@@ -170,7 +169,6 @@ export function ManualMarksEntry() {
   };
 
   const handleSubmit = async () => {
-    // Check if any semester has grades
     const hasAnyGrades = Object.values(allSemesterData).some(semData => 
       semData.some(sg => sg.grade !== '')
     );
@@ -187,7 +185,6 @@ export function ManualMarksEntry() {
     setLoading(true);
 
     try {
-      // Submit all semesters with data
       const semestersToSubmit = Object.entries(allSemesterData).filter(([_, semData]) => 
         semData.some(sg => sg.grade !== '')
       );
@@ -212,7 +209,6 @@ export function ManualMarksEntry() {
         description: `Grades for ${semestersToSubmit.length} semester(s) saved successfully`,
       });
 
-      // Navigate to dashboard
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Error saving grades:', error);
@@ -249,28 +245,54 @@ export function ManualMarksEntry() {
   const currentSemesterData = getCurrentSemesterData();
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
+        {/* Header - Mobile Optimized */}
+        <div className="mb-6 sm:mb-8">
           <Button
             onClick={() => navigate('/upload-results')}
             variant="ghost"
-            className="mb-4"
+            className="mb-3 sm:mb-4 h-9 sm:h-10 text-sm sm:text-base"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
             Back
           </Button>
           
-          <h1 className="text-4xl font-bold mb-2">Manual Grade Entry</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">Manual Grade Entry</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Select grades for each subject. You can fill multiple semesters before saving.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar - Semester Progress */}
-          <div className="lg:col-span-1">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+          {/* Mobile Semester Selector - Show on mobile only */}
+          <div className="lg:hidden">
+            <Select value={selectedSemester.toString()} onValueChange={handleSemesterChange}>
+              <SelectTrigger className="w-full h-11 sm:h-12">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6].map((sem) => {
+                  const progress = getSemesterProgress(sem);
+                  return (
+                    <SelectItem key={sem} value={sem.toString()}>
+                      <div className="flex items-center gap-2">
+                        <span>Semester {sem}</span>
+                        {progress.filled > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            ({progress.filled}/{progress.total})
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sidebar - Desktop Only */}
+          <div className="hidden lg:block lg:col-span-1">
             <div className="glass-card-strong p-6 sticky top-6">
               <h3 className="font-semibold mb-4">Semester Progress</h3>
               <div className="space-y-3">
@@ -312,7 +334,6 @@ export function ManualMarksEntry() {
                 })}
               </div>
 
-              {/* Save Button in Sidebar */}
               <Button
                 onClick={handleSubmit}
                 disabled={loading || Object.values(allSemesterData).every(semData => 
@@ -336,57 +357,55 @@ export function ManualMarksEntry() {
             </div>
           </div>
 
-          {/* Main Content - Subject List */}
+          {/* Main Content - Mobile Optimized */}
           <div className="lg:col-span-3">
-            <div className="glass-card-strong p-6 mb-6">
-              <div className="flex items-center justify-between mb-6">
+            <div className="glass-card-strong p-4 sm:p-6 mb-4 sm:mb-6 rounded-xl sm:rounded-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold">
+                  <h2 className="text-xl sm:text-2xl font-bold">
                     Semester {selectedSemester} Subjects
                   </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     {currentSemesterData.filter(sg => sg.grade !== '').length} of {currentSemesterData.length} subjects filled
                   </p>
                 </div>
-                <div className="glass-card p-4">
-                  <p className="text-xs text-muted-foreground mb-1">SGPA</p>
-                  <p className="text-2xl font-bold text-accent">
+                <div className="glass-card p-3 sm:p-4 self-start sm:self-auto">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">SGPA</p>
+                  <p className="text-xl sm:text-2xl font-bold text-accent">
                     {calculateSGPA(currentSemesterData)}
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-3 max-h-[700px] overflow-y-auto pr-2">
+              <div className="space-y-3 max-h-[500px] sm:max-h-[700px] overflow-y-auto pr-1 sm:pr-2">
                 {currentSemesterData.map((sg, index) => (
                   <div
                     key={index}
-                    className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg bg-accent/5 hover:bg-accent/10 transition-colors"
+                    className="grid grid-cols-1 gap-3 p-3 sm:p-4 rounded-lg bg-accent/5 hover:bg-accent/10 transition-colors"
                   >
-                    <div className="md:col-span-1 flex items-center">
-                      <span className="font-medium text-sm">{sg.subject}</span>
+                    <div className="flex items-center">
+                      <span className="font-medium text-xs sm:text-sm">{sg.subject}</span>
                     </div>
                     
-                    <div className="md:col-span-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <Select
                         value={sg.grade}
                         onValueChange={(grade) => handleGradeChange(index, grade)}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="w-full h-10 sm:h-11 text-xs sm:text-sm">
                           <SelectValue placeholder="Select grade" />
                         </SelectTrigger>
                         <SelectContent>
                           {GRADES.map((grade) => (
-                            <SelectItem key={grade.value} value={grade.value}>
+                            <SelectItem key={grade.value} value={grade.value} className="text-xs sm:text-sm">
                               {grade.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
 
-                    <div className="md:col-span-1 flex items-center justify-center">
                       {sg.grade && (
-                        <div className={`px-4 py-2 rounded-lg font-bold text-white w-full text-center ${getGradeColor(sg.grade)}`}>
+                        <div className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-white text-center text-xs sm:text-sm ${getGradeColor(sg.grade)}`}>
                           {sg.grade} ({sg.marks} marks)
                         </div>
                       )}
@@ -395,27 +414,54 @@ export function ManualMarksEntry() {
                 ))}
               </div>
 
-              {/* Grade Legend */}
-              <div className="mt-6 p-4 bg-accent/5 rounded-lg">
-                <p className="text-sm font-medium mb-3">Grade Scale Reference:</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Grade Legend - Mobile Optimized */}
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-accent/5 rounded-lg">
+                <p className="text-xs sm:text-sm font-medium mb-3">Grade Scale Reference:</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                   {GRADES.map((grade) => (
-                    <div key={grade.value} className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded flex items-center justify-center text-white font-bold ${grade.color}`}>
+                    <div key={grade.value} className="flex items-center gap-1.5 sm:gap-2">
+                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded flex items-center justify-center text-white font-bold text-xs sm:text-sm ${grade.color} flex-shrink-0`}>
                         {grade.value}
                       </div>
-                      <div className="text-xs">
+                      <div className="text-[10px] sm:text-xs min-w-0">
                         <div className="font-semibold">{grade.value}</div>
-                        <div className="text-muted-foreground">{grade.marks} marks</div>
+                        <div className="text-muted-foreground">{grade.marks}m</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
+
+            {/* Mobile Save Button - Fixed at bottom */}
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 sm:p-4 bg-background/95 backdrop-blur-md border-t border-border/10">
+              <Button
+                onClick={handleSubmit}
+                disabled={loading || Object.values(allSemesterData).every(semData => 
+                  !semData.some(sg => sg.grade !== '')
+                )}
+                variant="accent"
+                className="w-full h-12 sm:h-14 text-sm sm:text-base"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save All Grades
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
+      
+      {/* Add padding at bottom on mobile to prevent content from being hidden by fixed button */}
+      <div className="lg:hidden h-20 sm:h-24" />
     </div>
   );
 }
