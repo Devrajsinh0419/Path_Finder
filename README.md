@@ -88,33 +88,7 @@ It supports **PDF grade sheet uploads**, **manual marks entry**, semester-wise a
 - **Frontend**: Vercel
 - **Database**: Neon (PostgreSQL)
 
----
 
-## 📁 Project Structure (Simplified)
-
-Path_Finder/
-│
-├── SPA_Backend/
-│ ├── apps/
-│ │ ├── academics/
-│ │ │ ├── views.py
-│ │ │ ├── pdf_extractor.py
-│ │ │ ├── models.py
-│ │ │ └── urls.py
-│ │ └── ml_engine/
-│ │ ├── predictor.py
-│ │ └── model.pkl
-│ └── spa_backend/
-│ └── settings.py
-│
-└── front_end/
-├── src/
-│ ├── pages/
-│ ├── lib/api.ts
-│ └── components/
-
-
----
 
 ## 🧪 PDF Parsing Strategy (Important)
 
