@@ -86,7 +86,7 @@ const InputDetails = () => {
           </div>
 
           {/* Form Card */}
-          <div className="glass-card-strong p-8 md:p-10">
+          <div className="glass-card-strong rounded-2xl p-8 md:p-10">
             <div className="mb-8">
               <h1 className="font-display text-3xl font-bold mb-2 gradient-text">
                 Complete Your Profile
