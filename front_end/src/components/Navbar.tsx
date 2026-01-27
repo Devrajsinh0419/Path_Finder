@@ -36,75 +36,82 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 transperant">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-accent" />
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent backdrop-blur-md ">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-16">
+          {/* Logo - Responsive sizing */}
+          <Link to="/" className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-accent/20 flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent" />
             </div>
-            <span className="font-display text-white font-bold tracking-wider">
+            <span className="font-display text-white font-bold tracking-wider text-sm sm:text-base">
               PATHFINDER
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          {/* Desktop Navigation - Hidden on mobile/tablet */}
+          <div className="hidden lg:flex items-center gap-6 xl:gap-8">
             {navItems.map((item) => (
               <button
                 key={item.sectionId}
                 onClick={() => scrollToSection(item.sectionId)}
-                className="text-white/80 hover:text-accent transition-colors cursor-pointer"
+                className="text-sm text-white/80 hover:text-accent transition-colors cursor-pointer"
               >
                 {item.label}
               </button>
             ))}
           </div>
 
-          {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex items-center gap-4 text-white/80">
+          {/* Desktop Auth Buttons - Hidden on mobile/tablet */}
+          <div className="hidden lg:flex items-center gap-3 xl:gap-4 text-white/80">
             <Link to="/login">
-              <Button variant="ghost">Login</Button>
+              <Button variant="ghost" size="sm" className="text-sm">
+                Login
+              </Button>
             </Link>
             <Link to="/signup">
-              <Button variant="accent">Sign Up</Button>
+              <Button variant="accent" size="sm" className="text-sm">
+                Sign Up
+              </Button>
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button - Show on mobile/tablet */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-accent/10 transition-colors"
+            className="lg:hidden p-2  rounded-lg hover:bg-accent/10 transition-colors"
+            aria-label="Toggle menu"
           >
             {isOpen ? (
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             ) : (
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
             )}
           </button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Slide down animation */}
         {isOpen && (
-          <div className="md:hidden py-4 space-y-4 animate-fade-in">
+          <div className="lg:hidden py-3 sm:py-4 space-y-2 animate-fade-in border-t border-border/10">
             {navItems.map((item) => (
               <button
                 key={item.sectionId}
                 onClick={() => scrollToSection(item.sectionId)}
-                className="block w-full text-left px-4 py-2 text-foreground/80 hover:text-accent hover:bg-accent/10 rounded-lg transition-all"
+                className="block w-full text-left px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base text-white hover:text-accent hover:bg-accent/10 rounded-lg transition-all"
               >
                 {item.label}
               </button>
             ))}
-            <div className="pt-4 border-t border-border/10 space-y-2">
+            
+            {/* Mobile Auth Buttons */}
+            <div className="pt-3 sm:pt-4 border-t border-border/10 space-y-2">
               <Link to="/login" className="block" onClick={() => setIsOpen(false)}>
-                <Button variant="ghost" className="w-full">
+                <Button variant="ghost" className="w-full h-10 text-white sm:h-11 text-sm sm:text-base">
                   Login
                 </Button>
               </Link>
               <Link to="/signup" className="block" onClick={() => setIsOpen(false)}>
-                <Button variant="accent" className="w-full">
+                <Button variant="accent" className="w-full h-10 sm:h-11 text-sm sm:text-base">
                   Sign Up
                 </Button>
               </Link>
