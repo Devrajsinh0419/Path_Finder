@@ -64,7 +64,7 @@ export function UploadResults() {
         }
       });
 
-      const response = await api.post('/academics/upload-result-pdf/', formData,);
+      const response = await api.post('/academics/upload-result-pdf/', formData);
 
       toast({
         title: 'Success!',
@@ -89,35 +89,38 @@ export function UploadResults() {
   const semesterNames = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'];
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-background">
+    <div className="min-h-screen flex items-center justify-center px-3 sm:px-4 md:px-6 py-6 sm:py-12 bg-background">
       <div className="w-full max-w-4xl">
-        <div className="glass-card-strong p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="w-8 h-8 text-accent" />
+        <div className="glass-card-strong p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl">
+          {/* Header - Mobile Optimized */}
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-accent" />
             </div>
-            <h2 className="font-display text-3xl font-bold mb-2">
+            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-bold mb-2">
               Upload Your Grade Sheets
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground px-2 sm:px-0">
               Upload grade sheets for each semester. You can skip semesters you don't have yet.
             </p>
           </div>
 
-          <div className="space-y-4 mb-6">
+          {/* File Upload Cards - Mobile Optimized */}
+          <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
             {[1, 2, 3, 4, 5, 6].map((sem) => (
               <div
                 key={sem}
-                className="border border-border/50 rounded-lg p-4 hover:border-accent/50 transition-colors"
+                className="border border-border/50 rounded-lg p-3 sm:p-4 hover:border-accent/50 transition-colors"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium">
+                  <label className="text-xs sm:text-sm font-medium">
                     {semesterNames[sem - 1]} Semester
                   </label>
                   {files[sem] && (
                     <button
                       onClick={() => removeFile(sem)}
-                      className="text-red-500 hover:text-red-600"
+                      className="text-red-500 hover:text-red-600 p-1 sm:p-0"
+                      aria-label="Remove file"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -130,17 +133,17 @@ export function UploadResults() {
                       type="file"
                       accept=".pdf"
                       onChange={(e) => handleFileChange(sem, e)}
-                      className="cursor-pointer"
+                      className="cursor-pointer h-10 sm:h-12 text-xs sm:text-sm"
                     />
-                    <Upload className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <Upload className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground pointer-events-none" />
                   </div>
                 ) : (
-                  <div className="bg-accent/10 rounded-lg p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-accent" />
-                      <span className="text-sm">{files[sem].name}</span>
+                  <div className="bg-accent/10 rounded-lg p-2.5 sm:p-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent flex-shrink-0" />
+                      <span className="text-xs sm:text-sm truncate">{files[sem].name}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-[10px] sm:text-xs text-muted-foreground flex-shrink-0">
                       {(files[sem].size / 1024).toFixed(2)} KB
                     </span>
                   </div>
@@ -148,38 +151,50 @@ export function UploadResults() {
               </div>
             ))}
           </div>
-            <div className="flex gap-4 mb-6">
-  
-  <Button
-    onClick={() => navigate('/manual-marks-entry')}
-    variant="outline"
-    size="lg"
-    className="flex-1"
-  >
-    Enter Marks Manually
-  </Button>
-</div>
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-400">
+
+          {/* Manual Entry Button - Mobile Optimized */}
+          <div className="mb-4 sm:mb-6">
+            <Button
+              onClick={() => navigate('/manual-marks-entry')}
+              variant="outline"
+              size="lg"
+              className="w-full h-10 sm:h-12 text-xs sm:text-sm"
+            >
+              Enter Marks Manually
+            </Button>
+          </div>
+
+          {/* Tip Box - Mobile Optimized */}
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <p className="text-xs sm:text-sm text-blue-400">
               💡 <strong>Tip:</strong> You can upload results for any semesters you've completed. 
               The analysis will be based on the data you provide.
             </p>
           </div>
 
-          <div className="flex gap-4">
+          {/* Action Buttons - Mobile: Stack vertically, Desktop: Side-by-side */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <Button
               onClick={handleUpload}
               disabled={loading || !Object.values(files).some(f => f !== null)}
               variant="accent"
               size="lg"
-              className="flex-1"
+              className="w-full sm:flex-1 h-11 sm:h-12 text-sm sm:text-base order-1"
             >
-              {loading ? 'Processing...' : 'Upload & Analyze'}
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                  Processing...
+                </>
+              ) : (
+                'Upload & Analyze'
+              )}
             </Button>
             <Button
               onClick={() => navigate('/dashboard')}
               variant="outline"
               size="lg"
+              className="w-full sm:w-auto h-11 sm:h-12 text-sm sm:text-base order-2"
             >
               Skip for now
             </Button>
