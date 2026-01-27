@@ -149,21 +149,6 @@ const InputDetails = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                    College/Institute Name
-                      <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  placeholder="e.g., GTU, LJ University"
-                  value={formData.collegeName}
-                    onChange={(e) => setFormData({ ...formData, collegeName: e.target.value })}
-                  className="h-12"
-                  required
-                />
-              </div>
-
               {/* Academic Information Section */}
               <div className="space-y-6">
                 <div className="flex items-center gap-2 pb-2 border-b border-border/30">
@@ -171,7 +156,7 @@ const InputDetails = () => {
                   <h2 className="text-lg font-semibold">Academic Details</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">
                       Current Semester
@@ -192,6 +177,34 @@ const InputDetails = () => {
                   </div>
 
                   <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                    College/Institute Name
+                      <span className="text-red-500">*</span>
+                </label>
+                <Select
+                      value={formData.collegeName}
+                      onValueChange={(value) => setFormData({ ...formData, collegeName: value })}
+                    >
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Select college" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {['Parul University', 'GTU', 'LJ University', 'Other'].map((college) => (
+                          <SelectItem key={college} value={college}>{college}</SelectItem>
+                        ))}
+                      </SelectContent>
+                  </Select>
+                {/* <Input
+                  placeholder="e.g., GTU, LJ University"
+                  value={formData.collegeName}
+                    onChange={(e) => setFormData({ ...formData, collegeName: e.target.value })}
+                  className="h-12"
+                  required
+                /> */}
+              </div>
+
+                  {/* <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">
                       Academic Year
                     </label>
@@ -208,9 +221,9 @@ const InputDetails = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+                  </div> */}
 
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground flex items-center gap-2">
                       <BookOpen className="w-4 h-4" />
                       Branch/Stream
@@ -223,7 +236,7 @@ const InputDetails = () => {
                       className="h-12"
                       required
                     />
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
