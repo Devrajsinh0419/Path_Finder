@@ -50,12 +50,12 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation - Hidden on mobile/tablet */}
-          <div className="hidden lg:flex items-center gap-6 xl:gap-8">
+          <div className="hidden md:flex items-center gap-6 xl:gap-8">
             {navItems.map((item) => (
               <button
                 key={item.sectionId}
                 onClick={() => scrollToSection(item.sectionId)}
-                className="text-sm text-[#b4b4ff]/70 hover:text-accent transition-colors cursor-pointer"
+                className="text-sm text-[#2E0658]/70 hover:text-accent transition-colors cursor-pointer"
               >
                 {item.label}
               </button>
@@ -63,7 +63,7 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Auth Buttons - Hidden on mobile/tablet */}
-          <div className="hidden lg:flex items-center gap-3 xl:gap-4 text-white/80">
+          <div className="hidden md:flex items-center gap-3 xl:gap-4 text-[#2E0658]/80">
             <Link to="/login">
               <Button variant="ghost" size="sm" className="text-sm">
                 Login
@@ -79,7 +79,7 @@ const Navbar = () => {
           {/* Mobile Menu Button - Show on mobile/tablet */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-2  rounded-lg hover:bg-accent/10 transition-colors"
+            className="md:hidden p-2  rounded-lg hover:bg-accent/10 transition-colors"
             aria-label="Toggle menu"
           >
             {isOpen ? (
@@ -92,7 +92,7 @@ const Navbar = () => {
 
         {/* Mobile Menu - Slide down animation */}
         {isOpen && (
-          <div className="lg:hidden py-3 sm:py-4 space-y-2 animate-fade-in border-t border-border/10">
+          <div className="md:hidden py-3 sm:py-4 space-y-2 animate-fade-in border-t border-border/10">
             {navItems.map((item) => (
               <button
                 key={item.sectionId}
