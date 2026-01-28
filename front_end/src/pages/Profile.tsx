@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, LogOut, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Stars from '@/components/Stars';
-import heroBg from '@/assets/hero-bg.jpg';
+import heroBg from '@/assets/hero-bg.png';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 

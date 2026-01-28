@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Sparkles, Eye, EyeOff } from 'lucide-react'; // Add Eye icons
 import Stars from '@/components/Stars';
-import heroBg from '@/assets/hero-bg.jpg';
+import heroBg from '@/assets/hero-bg.png';
 import api from '@/lib/api';
 
 const Signup = () => {
