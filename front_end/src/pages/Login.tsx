@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sparkles, Eye, EyeOff } from 'lucide-react'; 
 import Stars from '@/components/Stars';
-import heroBg from '@/assets/hero-bg.jpg';
+import heroBg from '@/assets/hero-bg.png';
 import api from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
 

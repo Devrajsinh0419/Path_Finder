@@ -55,7 +55,7 @@ const Navbar = () => {
               <button
                 key={item.sectionId}
                 onClick={() => scrollToSection(item.sectionId)}
-                className="text-sm text-white/80 hover:text-accent transition-colors cursor-pointer"
+                className="text-sm text-[#b4b4ff]/70 hover:text-accent transition-colors cursor-pointer"
               >
                 {item.label}
               </button>
