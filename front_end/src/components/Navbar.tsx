@@ -79,7 +79,7 @@ const Navbar = () => {
           {/* Mobile Menu Button - Show on mobile/tablet */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2  rounded-lg hover:bg-accent/10 transition-colors"
+            className="md:hidden p-2  rounded-lg hover:bg-accent/10 transition-colors text-black"
             aria-label="Toggle menu"
           >
             {isOpen ? (
@@ -92,12 +92,12 @@ const Navbar = () => {
 
         {/* Mobile Menu - Slide down animation */}
         {isOpen && (
-          <div className="md:hidden py-3 sm:py-4 space-y-2 animate-fade-in border-t border-border/10">
+          <div className="md:hidden py-3 sm:py-4 space-y-2 animate-fade-in border-t border-border/10 ">
             {navItems.map((item) => (
               <button
                 key={item.sectionId}
                 onClick={() => scrollToSection(item.sectionId)}
-                className="block w-full text-left px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base text-white hover:text-accent hover:bg-accent/10 rounded-lg transition-all"
+                className="block w-full text-left px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base text-[#2E0658]/80 hover:text-accent hover:bg-accent/10 rounded-lg transition-all"
               >
                 {item.label}
               </button>
@@ -106,7 +106,7 @@ const Navbar = () => {
             {/* Mobile Auth Buttons */}
             <div className="pt-3 sm:pt-4 border-t border-border/10 space-y-2">
               <Link to="/login" className="block" onClick={() => setIsOpen(false)}>
-                <Button variant="ghost" className="w-full h-10 text-white sm:h-11 text-sm sm:text-base">
+                <Button variant="ghost" className="w-full h-10 text-[#2E0658]/80 sm:h-11 text-sm sm:text-base">
                   Login
                 </Button>
               </Link>
