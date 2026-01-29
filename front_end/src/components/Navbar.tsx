@@ -44,7 +44,7 @@ const Navbar = () => {
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-accent/20 flex items-center justify-center">
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent" />
             </div>
-            <span className="font-display text-white font-bold tracking-wider text-sm sm:text-base">
+            <span className="font-display text-black font-bold tracking-wider text-sm sm:text-base size-large">
               PATHFINDER
             </span>
           </Link>
