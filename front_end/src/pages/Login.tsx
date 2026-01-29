@@ -79,7 +79,9 @@ const Login = () => {
         className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
-        <div className="absolute inset-0" />
+          {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-r from-background/10  via-transparent to-background/80" />
+        
         
         
         <div className="relative z-10 flex flex-col items-start ut-2 justify-start pt-5 px-11">
