@@ -76,7 +76,7 @@ const Login = () => {
       <Stars />
       {/* Left Panel - Branding */}
       <div
-        className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center"
+        className="hidden lg:flex lg:w-1/2 relative bg-center bg-cover h-screen align-left padding-0 margin-0"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
           {/* Overlay gradient */}
@@ -103,15 +103,17 @@ const Login = () => {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 bg-background relative">
+      <div className="flex-1 flex items-center justify-center px-6 py-12 bg-background/100 relative">
         <Stars ></Stars>
         
         <div className="w-full max-w-md animate-fade-in-up">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <Sparkles className="w-6 h-6 text-accent" />
-            <span className="font-display text-xl font-bold">PathFinder</span>
-          </div>
+          <Link to="/" className="flex items-center gap-3 mb-8">
+            <div className="lg:hidden flex items-center gap-2 mb-8">
+              <Sparkles className="w-6 h-6 text-accent" />
+              <span className="font-display text-xl font-bold">PathFinder</span>
+            </div>
+          </Link>
 
           {/* Tabs */}
           <div className="flex gap-8 mb-8 border-b border-border/30">
