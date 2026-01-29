@@ -116,10 +116,12 @@ const Signup = () => {
         
         <div className="w-full max-w-md animate-fade-in-up">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <Sparkles className="w-6 h-6 text-accent" />
-            <span className="font-display text-xl font-bold">PathFinders</span>
+          <Link to="/" className="flex items-center gap-3 mb-8">
+            <div className="lg:hidden flex items-center gap-2 mb-8">
+              <Sparkles className="w-6 h-6 text-accent" />
+              <span className="font-display text-xl font-bold">PathFinders</span>
           </div>
+          </Link>
 
           {/* Tabs */}
           <div className="flex gap-8 mb-8 border-b border-border/30">
