@@ -33,7 +33,7 @@ const HeroSection = () => {
             </Button>
           </Link>
           <Link to="/About">
-            <Button className='text-white' variant="hero-outline" size="lg">
+            <Button className='text-black' variant="hero-outline" size="lg">
               About Us
             </Button>
           </Link>
