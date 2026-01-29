@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sparkles, Eye, EyeOff } from 'lucide-react'; 
 import Stars from '@/components/Stars';
-import heroBg from '@/assets/hero-bg.png';
+import heroBg from '@/assets/login.jpg';
 import api from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
 
@@ -82,7 +82,7 @@ const Login = () => {
         <div className="absolute inset-0" />
         
         
-        <div className="relative z-10 flex flex-col items-start justify-center px-16">
+        <div className="relative z-10 flex flex-col items-start ut-2 justify-start pt-5 px-11">
           <Link to="/" className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-accent" />
