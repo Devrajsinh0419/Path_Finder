@@ -85,8 +85,11 @@ const Signup = () => {
       <div
         className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center"
         style={{ backgroundImage: `url(${heroBg})` }}
+        
       >
-        <div className="absolute inset-0 bg-background/5" />
+         {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-r from-background/20  via-transparent to-background/100" />
+        
         
         
         <div className="absolute right-20 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center  ">
