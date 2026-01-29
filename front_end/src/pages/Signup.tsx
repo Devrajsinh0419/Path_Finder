@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Sparkles, Eye, EyeOff } from 'lucide-react'; // Add Eye icons
 import Stars from '@/components/Stars';
-import heroBg from '@/assets/hero-bg.png';
+import heroBg from '@/assets/signup.png';
 import api from '@/lib/api';
 
 const Signup = () => {
@@ -85,11 +85,14 @@ const Signup = () => {
       <div
         className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center"
         style={{ backgroundImage: `url(${heroBg})` }}
+        
       >
-        <div className="absolute inset-0 bg-background/5" />
+         {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-r from-background/20  via-transparent to-background/100" />
         
         
-        <div className="relative z-10 flex flex-col items-start justify-center px-16 ">
+        
+        <div className="absolute right-20 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center  ">
           <Link to="/" className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-accent" />
