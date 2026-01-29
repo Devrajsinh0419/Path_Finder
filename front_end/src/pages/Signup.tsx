@@ -117,7 +117,7 @@ const Signup = () => {
             <div className="lg:hidden flex items-center gap-2 mb-8">
               <Sparkles className="w-6 h-6 text-accent" />
               <span className="font-display text-xl font-bold">PathFinders</span>
-            </div>
+          </div>
           </Link>
 
           {/* Tabs */}
