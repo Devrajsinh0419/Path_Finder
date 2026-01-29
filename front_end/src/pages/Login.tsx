@@ -76,11 +76,10 @@ const Login = () => {
       <Stars />
       {/* Left Panel - Branding */}
       <div
-        className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center"
+        className="hidden lg:flex lg:w-1/2 relative bg-center bg-cover h-screen align-left padding-0 margin-0"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
-        <div className="absolute inset-0" />
-        
+        <div className="absolute inset-0 bg-background/20 " />
         
         <div className="relative z-10 flex flex-col items-start justify-center px-16">
           <Link to="/" className="flex items-center gap-3 mb-8">
@@ -101,7 +100,7 @@ const Login = () => {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 bg-background relative">
+      <div className="flex-1 flex items-center justify-center px-6 py-12 bg-background/100 relative">
         <Stars ></Stars>
         
         <div className="w-full max-w-md animate-fade-in-up">
