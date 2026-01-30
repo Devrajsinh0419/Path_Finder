@@ -54,7 +54,7 @@ const WhatIsSection = () => {
               </h2>
               
               <p className="text-foreground/80 leading-relaxed mb-6">
-                PathFinders is a smart academic guidance platform for diploma students.
+                PathFinder is a smart academic guidance platform for diploma students.
                 It analyzes your marks, identifies strengths and weaknesses, and recommends 
                 the best career domain for you.
               </p>
