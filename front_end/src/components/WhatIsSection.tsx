@@ -1,12 +1,49 @@
 import { Link } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react'; // Make sure this is here!
 import { Button } from './ui/button';
 import { GraduationCap } from 'lucide-react';
 
 const WhatIsSection = () => {
+
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    // This stops the browser from jumping to the middle of the page on refresh
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          // observer.unobserve(entry.target); // Optional: keep it true once triggered
+        }
+        else {
+          setIsVisible(false); // Resets when scrolling UP out of view
+        }
+      },
+      { threshold: 0.1 ,
+        rootMargin: "0px 0px -50px 0px"
+      }
+      
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="relative py-20 px-4">
+    <section ref={sectionRef} className="relative py-20 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="glass-card p-8 md:p-12 relative overflow-hidden rounded-2xl">
+        <div className={`glass-card p-8 md:p-12 relative overflow-hidden rounded-2xl transition-all duration-1000 ease-out 
+          bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl
+          ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}>
+          
           {/* Decorative gradient */}
           <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-accent/5 to-transparent pointer-events-none" />
           
