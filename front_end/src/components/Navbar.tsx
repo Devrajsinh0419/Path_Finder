@@ -37,8 +37,8 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent backdrop-blur-md ">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-        <div className="flex items-center justify-between h-14 sm:h-16">
+      <div className="max-w-9xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex items-center justify-between h-20 sm:h-16">
           {/* Logo - Responsive sizing */}
           <Link to="/" className="flex items-center gap-1.5 sm:gap-2">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-accent/20 flex items-center justify-center">
@@ -55,7 +55,7 @@ const Navbar = () => {
               <button
                 key={item.sectionId}
                 onClick={() => scrollToSection(item.sectionId)}
-                className="text-sm text-[#2E0658]/70 hover:text-accent transition-colors cursor-pointer"
+                className="text-sm text-[#2E0658]/70 hover:text-accent transition-colors cursor-pointer size-large"
               >
                 {item.label}
               </button>
