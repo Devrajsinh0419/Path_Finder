@@ -50,7 +50,7 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation - Hidden on mobile/tablet */}
-          <div className="hidden md:flex items-center gap-6 xl:gap-8">
+          <div className="hidden md:flex items-center gap-15 xl:gap-20">
             {navItems.map((item) => (
               <button
                 key={item.sectionId}
