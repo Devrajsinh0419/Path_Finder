@@ -11,7 +11,7 @@ const Footer = () => {
     <footer className="relative py-12 px-4 border-t border-border/30">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
         <p className="text-muted-foreground text-sm">
-          © 2024 PathFinder. All rights reserved.
+          © 2026 PathFinder. All rights reserved.
         </p>
 
         <div className="flex items-center gap-4">
