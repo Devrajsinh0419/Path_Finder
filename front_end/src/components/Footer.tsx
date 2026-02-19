@@ -14,7 +14,7 @@ const Footer = () => {
           © 2026 PathFinder. All rights reserved.
         </p>
 
-        <div className="flex items-center gap-4">
+        {/* <div className="flex items-center gap-4">
           {socialLinks.map((social) => (
             <a
               key={social.label}
@@ -25,7 +25,7 @@ const Footer = () => {
               <social.icon className="w-5 h-5" />
             </a>
           ))}
-        </div>
+        </div> */}
       </div>
     </footer>
   );

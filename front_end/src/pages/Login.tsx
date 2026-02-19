@@ -80,7 +80,7 @@ const Login = () => {
         style={{ backgroundImage: `url(${heroBg})` }}
       >
           {/* Overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-background/10  via-transparent to-background/80" />
+      <div className="absolute inset-0 bg-gradient-to-r from-background/10  via-transparent to-background/100" />
         
         
         
