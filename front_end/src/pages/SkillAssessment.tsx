@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Brain, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ interface LevelInfo {
 const TOTAL_QUESTIONS = 5;
 const START_DIFFICULTY: DifficultyLevel = 2;
 const BASELINE_LEVEL: DifficultyLevel = 1;
+const MAX_FOCUS_VIOLATIONS = 2;
+const VIOLATION_DEBOUNCE_MS = 800;
 
 const DIFFICULTY_META: Record<DifficultyLevel, string> = {
   1: "Easy",
@@ -711,6 +713,7 @@ interface FinalResult {
   correctAnswers: number;
   totalQuestions: number;
   accuracy: number;
+  terminatedReason?: string;
 }
 
 const SkillAssessment = () => {
@@ -734,6 +737,9 @@ const SkillAssessment = () => {
   const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [finalResult, setFinalResult] = useState<FinalResult | null>(null);
+  const [focusViolations, setFocusViolations] = useState(0);
+  const violationTimestampRef = useRef(0);
+  const terminatedRef = useRef(false);
 
   const progressValue = (questionNumber / TOTAL_QUESTIONS) * 100;
   const activeSkillLabel = activeSkillNames.length > 0 ? activeSkillNames.join(", ") : "General Programming";
@@ -757,6 +763,9 @@ const SkillAssessment = () => {
     setUsedQuestionIds([firstQuestion.id]);
     setCurrentQuestion(firstQuestion);
     setFinalResult(null);
+    setFocusViolations(0);
+    violationTimestampRef.current = 0;
+    terminatedRef.current = false;
     setAssessmentStarted(true);
     return true;
   };
@@ -789,6 +798,131 @@ const SkillAssessment = () => {
 
     preloadSkill();
   }, [location.state]);
+
+  const terminateAssessmentForFocusViolation = useCallback(
+    async (violationCount: number) => {
+      if (terminatedRef.current) {
+        return;
+      }
+
+      terminatedRef.current = true;
+      const levelInfo = LEVEL_MAP[BASELINE_LEVEL];
+
+      setSavingResult(true);
+      try {
+        await api.post("/academics/student-profile/", {
+          assessment_skill: activeSkillLabel.slice(0, 100),
+          assessment_highest_level: BASELINE_LEVEL,
+          assessment_level_label: levelInfo.value,
+          assessment_accuracy: 0,
+          assessment_total_questions: TOTAL_QUESTIONS,
+          assessment_correct_answers: 0,
+        });
+      } catch (error) {
+        console.error("Failed to save terminated assessment:", error);
+      } finally {
+        setSavingResult(false);
+      }
+
+      setFinalResult({
+        highestLevel: BASELINE_LEVEL,
+        levelInfo,
+        correctAnswers: 0,
+        totalQuestions: TOTAL_QUESTIONS,
+        accuracy: 0,
+        terminatedReason: `Assessment terminated after ${violationCount} tab switch violation${
+          violationCount > 1 ? "s" : ""
+        }.`,
+      });
+    },
+    [activeSkillLabel]
+  );
+
+  useEffect(() => {
+    if (!assessmentStarted || finalResult) {
+      return;
+    }
+
+    const registerViolation = () => {
+      const now = Date.now();
+      if (now - violationTimestampRef.current < VIOLATION_DEBOUNCE_MS) {
+        return;
+      }
+
+      violationTimestampRef.current = now;
+      setFocusViolations((previous) => {
+        const next = previous + 1;
+        const remaining = MAX_FOCUS_VIOLATIONS - next;
+
+        if (remaining > 0) {
+          toast({
+            title: "Tab switch detected",
+            description: `Stay on this tab. ${remaining} warning${
+              remaining > 1 ? "s" : ""
+            } left before termination.`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Assessment terminated",
+            description: "Multiple tab switches were detected.",
+            variant: "destructive",
+          });
+          void terminateAssessmentForFocusViolation(next);
+        }
+
+        return next;
+      });
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        registerViolation();
+      }
+    };
+
+    const onWindowBlur = () => {
+      if (!document.hasFocus()) {
+        registerViolation();
+      }
+    };
+
+    const preventClipboard = (event: ClipboardEvent) => {
+      event.preventDefault();
+    };
+
+    const preventContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
+    };
+
+    const preventShortcuts = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && ["c", "v", "x", "a", "u"].includes(key)) {
+        event.preventDefault();
+      }
+      if (key === "f12") {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("blur", onWindowBlur);
+    document.addEventListener("copy", preventClipboard);
+    document.addEventListener("cut", preventClipboard);
+    document.addEventListener("paste", preventClipboard);
+    document.addEventListener("contextmenu", preventContextMenu);
+    window.addEventListener("keydown", preventShortcuts);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("blur", onWindowBlur);
+      document.removeEventListener("copy", preventClipboard);
+      document.removeEventListener("cut", preventClipboard);
+      document.removeEventListener("paste", preventClipboard);
+      document.removeEventListener("contextmenu", preventContextMenu);
+      window.removeEventListener("keydown", preventShortcuts);
+    };
+  }, [assessmentStarted, finalResult, terminateAssessmentForFocusViolation, toast]);
 
   const handleStart = () => {
     const started = initializeAssessment(skillsInput);
@@ -927,6 +1061,9 @@ const SkillAssessment = () => {
 
           <div className="rounded-xl bg-accent/10 border border-accent/20 p-4 mb-8">
             <p className="text-sm sm:text-base">{finalResult.levelInfo.description}</p>
+            {finalResult.terminatedReason && (
+              <p className="text-sm sm:text-base text-destructive mt-2">{finalResult.terminatedReason}</p>
+            )}
           </div>
 
           <Button
@@ -1006,6 +1143,9 @@ const SkillAssessment = () => {
         <Progress value={progressValue} className="h-2 mb-2" />
         <p className="text-xs text-muted-foreground mb-6">
           Question {questionNumber} of {TOTAL_QUESTIONS}
+        </p>
+        <p className="text-xs text-muted-foreground mb-6">
+          Tab switches: {focusViolations}/{MAX_FOCUS_VIOLATIONS}
         </p>
 
         <div className="rounded-xl border border-border/40 p-4 sm:p-6 mb-6">
