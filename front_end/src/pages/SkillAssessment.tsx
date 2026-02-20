@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Brain, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,9 +33,24 @@ interface LevelInfo {
   description: string;
 }
 
+type ProctoringEventType =
+  | "ASSESSMENT_STARTED"
+  | "ANSWER_SUBMITTED"
+  | "TAB_SWITCH"
+  | "WINDOW_BLUR"
+  | "COPY_BLOCKED"
+  | "CUT_BLOCKED"
+  | "PASTE_BLOCKED"
+  | "CONTEXT_MENU_BLOCKED"
+  | "SHORTCUT_BLOCKED"
+  | "ASSESSMENT_COMPLETED"
+  | "ASSESSMENT_TERMINATED";
+
 const TOTAL_QUESTIONS = 5;
 const START_DIFFICULTY: DifficultyLevel = 2;
 const BASELINE_LEVEL: DifficultyLevel = 1;
+const MAX_FOCUS_VIOLATIONS = 2;
+const VIOLATION_DEBOUNCE_MS = 800;
 
 const DIFFICULTY_META: Record<DifficultyLevel, string> = {
   1: "Easy",
@@ -60,6 +75,43 @@ const LEVEL_MAP: Record<DifficultyLevel, LevelInfo> = {
     description: "Strong command of concepts and deeper problem solving.",
   },
 };
+
+function createAssessmentSessionId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  if (!globalThis.crypto?.subtle) {
+    return value.slice(0, 128);
+  }
+
+  const encoded = new TextEncoder().encode(value);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function getDeviceFingerprint(): Promise<string> {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "unknown";
+  const screenInfo = `${window.screen?.width ?? 0}x${window.screen?.height ?? 0}x${
+    window.screen?.colorDepth ?? 0
+  }`;
+  const rawFingerprint = [
+    navigator.userAgent,
+    navigator.language,
+    navigator.platform,
+    String(navigator.hardwareConcurrency ?? "unknown"),
+    String(navigator.maxTouchPoints ?? "unknown"),
+    timezone,
+    screenInfo,
+  ].join("|");
+
+  return sha256Hex(rawFingerprint);
+}
 
 const QUESTION_BANK: Record<SkillKey, Record<DifficultyLevel, Question[]>> = {
   python: {
@@ -711,6 +763,7 @@ interface FinalResult {
   correctAnswers: number;
   totalQuestions: number;
   accuracy: number;
+  terminatedReason?: string;
 }
 
 const SkillAssessment = () => {
@@ -721,6 +774,8 @@ const SkillAssessment = () => {
   const [skillsInput, setSkillsInput] = useState("");
   const [activeSkillNames, setActiveSkillNames] = useState<string[]>([]);
   const [activeSkillKeys, setActiveSkillKeys] = useState<SkillKey[]>(["programming"]);
+  const [assessmentSessionId, setAssessmentSessionId] = useState("");
+  const [deviceFingerprint, setDeviceFingerprint] = useState("");
 
   const [loadingSkill, setLoadingSkill] = useState(true);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
@@ -734,9 +789,61 @@ const SkillAssessment = () => {
   const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [finalResult, setFinalResult] = useState<FinalResult | null>(null);
+  const [focusViolations, setFocusViolations] = useState(0);
+  const violationTimestampRef = useRef(0);
+  const terminatedRef = useRef(false);
+  const assessmentSessionIdRef = useRef("");
+  const deviceFingerprintRef = useRef("");
+  const startedEventSessionRef = useRef("");
 
   const progressValue = (questionNumber / TOTAL_QUESTIONS) * 100;
   const activeSkillLabel = activeSkillNames.length > 0 ? activeSkillNames.join(", ") : "General Programming";
+
+  const logProctoringEvent = useCallback(
+    async (
+      eventType: ProctoringEventType,
+      suspicious = false,
+      metadata: Record<string, unknown> = {}
+    ) => {
+      const sessionId = assessmentSessionIdRef.current;
+      if (!sessionId) {
+        return;
+      }
+
+      try {
+        await api.post("/academics/proctoring-events/", {
+          assessment_session_id: sessionId,
+          assessment_skill: activeSkillLabel.slice(0, 100),
+          event_type: eventType,
+          suspicious,
+          client_timestamp: new Date().toISOString(),
+          metadata,
+          device_fingerprint: deviceFingerprintRef.current,
+        });
+      } catch (error) {
+        console.error("Failed to log proctoring event:", error);
+      }
+    },
+    [activeSkillLabel]
+  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadFingerprint = async () => {
+      const fingerprint = await getDeviceFingerprint();
+      if (!mounted) {
+        return;
+      }
+      setDeviceFingerprint(fingerprint);
+      deviceFingerprintRef.current = fingerprint;
+    };
+
+    void loadFingerprint();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const initializeAssessment = (skillText: string): boolean => {
     const selectedSkills = parseSkills(skillText);
@@ -746,9 +853,11 @@ const SkillAssessment = () => {
 
     const skillKeys = Array.from(new Set(selectedSkills.map((skill) => resolveSkillKey(skill))));
     const firstQuestion = pickQuestion(skillKeys, START_DIFFICULTY, []);
+    const sessionId = createAssessmentSessionId();
 
     setActiveSkillNames(selectedSkills);
     setActiveSkillKeys(skillKeys);
+    setAssessmentSessionId(sessionId);
     setQuestionNumber(1);
     setDifficulty(START_DIFFICULTY);
     setHighestLevelReached(BASELINE_LEVEL);
@@ -757,6 +866,11 @@ const SkillAssessment = () => {
     setUsedQuestionIds([firstQuestion.id]);
     setCurrentQuestion(firstQuestion);
     setFinalResult(null);
+    setFocusViolations(0);
+    violationTimestampRef.current = 0;
+    terminatedRef.current = false;
+    startedEventSessionRef.current = "";
+    assessmentSessionIdRef.current = sessionId;
     setAssessmentStarted(true);
     return true;
   };
@@ -790,6 +904,188 @@ const SkillAssessment = () => {
     preloadSkill();
   }, [location.state]);
 
+  useEffect(() => {
+    if (!assessmentStarted || !assessmentSessionId || finalResult) {
+      return;
+    }
+    if (!deviceFingerprintRef.current) {
+      return;
+    }
+
+    if (startedEventSessionRef.current === assessmentSessionId) {
+      return;
+    }
+
+    startedEventSessionRef.current = assessmentSessionId;
+    void logProctoringEvent("ASSESSMENT_STARTED", false, {
+      total_questions: TOTAL_QUESTIONS,
+      started_with_fingerprint: true,
+    });
+  }, [assessmentSessionId, assessmentStarted, deviceFingerprint, finalResult, logProctoringEvent]);
+
+  const terminateAssessmentForFocusViolation = useCallback(
+    async (violationCount: number) => {
+      if (terminatedRef.current) {
+        return;
+      }
+
+      terminatedRef.current = true;
+      const levelInfo = LEVEL_MAP[BASELINE_LEVEL];
+      void logProctoringEvent("ASSESSMENT_TERMINATED", true, {
+        reason: "focus_violation_limit_exceeded",
+        violation_count: violationCount,
+      });
+
+      setSavingResult(true);
+      try {
+        await api.post("/academics/student-profile/", {
+          assessment_skill: activeSkillLabel.slice(0, 100),
+          assessment_highest_level: BASELINE_LEVEL,
+          assessment_level_label: levelInfo.value,
+          assessment_accuracy: 0,
+          assessment_total_questions: TOTAL_QUESTIONS,
+          assessment_correct_answers: 0,
+        });
+      } catch (error) {
+        console.error("Failed to save terminated assessment:", error);
+      } finally {
+        setSavingResult(false);
+      }
+
+      setFinalResult({
+        highestLevel: BASELINE_LEVEL,
+        levelInfo,
+        correctAnswers: 0,
+        totalQuestions: TOTAL_QUESTIONS,
+        accuracy: 0,
+        terminatedReason: `Assessment terminated after ${violationCount} tab switch violation${
+          violationCount > 1 ? "s" : ""
+        }.`,
+      });
+    },
+    [activeSkillLabel, logProctoringEvent]
+  );
+
+  useEffect(() => {
+    if (!assessmentStarted || finalResult) {
+      return;
+    }
+
+    const registerViolation = (eventType: "TAB_SWITCH" | "WINDOW_BLUR") => {
+      const now = Date.now();
+      if (now - violationTimestampRef.current < VIOLATION_DEBOUNCE_MS) {
+        return;
+      }
+
+      violationTimestampRef.current = now;
+      setFocusViolations((previous) => {
+        const next = previous + 1;
+        const remaining = MAX_FOCUS_VIOLATIONS - next;
+        void logProctoringEvent(eventType, true, {
+          violation_count: next,
+          remaining_warnings: Math.max(remaining, 0),
+        });
+
+        if (remaining > 0) {
+          toast({
+            title: "Tab switch detected",
+            description: `Stay on this tab. ${remaining} warning${
+              remaining > 1 ? "s" : ""
+            } left before termination.`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Assessment terminated",
+            description: "Multiple tab switches were detected.",
+            variant: "destructive",
+          });
+          void terminateAssessmentForFocusViolation(next);
+        }
+
+        return next;
+      });
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        registerViolation("TAB_SWITCH");
+      }
+    };
+
+    const onWindowBlur = () => {
+      if (!document.hasFocus()) {
+        registerViolation("WINDOW_BLUR");
+      }
+    };
+
+    const preventClipboard = (event: ClipboardEvent) => {
+      event.preventDefault();
+      const eventTypeMap: Record<string, ProctoringEventType> = {
+        copy: "COPY_BLOCKED",
+        cut: "CUT_BLOCKED",
+        paste: "PASTE_BLOCKED",
+      };
+      const eventType = eventTypeMap[event.type];
+      if (eventType) {
+        void logProctoringEvent(eventType, true, {
+          blocked_action: event.type,
+        });
+      }
+    };
+
+    const preventContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
+      void logProctoringEvent("CONTEXT_MENU_BLOCKED", true, {
+        blocked_action: "contextmenu",
+      });
+    };
+
+    const preventShortcuts = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && ["c", "v", "x", "a", "u"].includes(key)) {
+        event.preventDefault();
+        void logProctoringEvent("SHORTCUT_BLOCKED", true, {
+          blocked_action: "keyboard_shortcut",
+          key,
+          ctrl_or_meta: true,
+        });
+      }
+      if (key === "f12") {
+        event.preventDefault();
+        void logProctoringEvent("SHORTCUT_BLOCKED", true, {
+          blocked_action: "keyboard_shortcut",
+          key,
+          ctrl_or_meta: false,
+        });
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("blur", onWindowBlur);
+    document.addEventListener("copy", preventClipboard);
+    document.addEventListener("cut", preventClipboard);
+    document.addEventListener("paste", preventClipboard);
+    document.addEventListener("contextmenu", preventContextMenu);
+    window.addEventListener("keydown", preventShortcuts);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("blur", onWindowBlur);
+      document.removeEventListener("copy", preventClipboard);
+      document.removeEventListener("cut", preventClipboard);
+      document.removeEventListener("paste", preventClipboard);
+      document.removeEventListener("contextmenu", preventContextMenu);
+      window.removeEventListener("keydown", preventShortcuts);
+    };
+  }, [
+    assessmentStarted,
+    finalResult,
+    logProctoringEvent,
+    terminateAssessmentForFocusViolation,
+    toast,
+  ]);
+
   const handleStart = () => {
     const started = initializeAssessment(skillsInput);
     if (!started) {
@@ -804,6 +1100,13 @@ const SkillAssessment = () => {
   const completeAssessment = async (highestLevel: DifficultyLevel, totalCorrect: number) => {
     const levelInfo = LEVEL_MAP[highestLevel];
     const accuracy = Math.round((totalCorrect / TOTAL_QUESTIONS) * 100);
+    void logProctoringEvent("ASSESSMENT_COMPLETED", false, {
+      highest_level: highestLevel,
+      level_label: levelInfo.value,
+      correct_answers: totalCorrect,
+      total_questions: TOTAL_QUESTIONS,
+      accuracy,
+    });
 
     setSavingResult(true);
     try {
@@ -856,6 +1159,12 @@ const SkillAssessment = () => {
 
     const selectedIndex = Number(selectedAnswer);
     const isCorrect = selectedIndex === currentQuestion.correctIndex;
+    void logProctoringEvent("ANSWER_SUBMITTED", false, {
+      question_number: questionNumber,
+      difficulty,
+      selected_index: selectedIndex,
+      is_correct: isCorrect,
+    });
     const updatedCorrectAnswers = isCorrect ? correctAnswers + 1 : correctAnswers;
     const nextDifficulty = isCorrect
       ? (Math.min(3, difficulty + 1) as DifficultyLevel)
@@ -927,6 +1236,9 @@ const SkillAssessment = () => {
 
           <div className="rounded-xl bg-accent/10 border border-accent/20 p-4 mb-8">
             <p className="text-sm sm:text-base">{finalResult.levelInfo.description}</p>
+            {finalResult.terminatedReason && (
+              <p className="text-sm sm:text-base text-destructive mt-2">{finalResult.terminatedReason}</p>
+            )}
           </div>
 
           <Button
@@ -1006,6 +1318,9 @@ const SkillAssessment = () => {
         <Progress value={progressValue} className="h-2 mb-2" />
         <p className="text-xs text-muted-foreground mb-6">
           Question {questionNumber} of {TOTAL_QUESTIONS}
+        </p>
+        <p className="text-xs text-muted-foreground mb-6">
+          Tab switches: {focusViolations}/{MAX_FOCUS_VIOLATIONS}
         </p>
 
         <div className="rounded-xl border border-border/40 p-4 sm:p-6 mb-6">
