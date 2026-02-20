@@ -30,21 +30,35 @@ const InputDetails = () => {
     e.preventDefault()
     setLoading(true)
     try {
+      const semesterNumber = formData.semester
+        ? parseInt(formData.semester.replace(/\D/g, ''), 10)
+        : null
+
       // Save to the UserProfile model that the modal uses
       await api.post("/accounts/complete-profile/", {
         full_name: `${formData.firstName} ${formData.lastName}`,
         enrollment_no: formData.enrollmentNo,
         college_name: formData.collegeName,
-        current_semester: parseInt(formData.semester.replace(/\D/g, '')),
+        current_semester: semesterNumber,
       })
       
-      await api.post("/academics/student-profile/", formData)
+      await api.post("/academics/student-profile/", {
+        full_name: `${formData.firstName} ${formData.lastName}`,
+        enrollment_number: formData.enrollmentNo,
+        institute_name: formData.collegeName,
+        current_semester: semesterNumber,
+        interests: formData.skills,
+      })
       
       toast({
         title: "Profile Submitted",
         description: "Your profile has been successfully submitted.",
       })
-      navigate("/upload-results")
+      navigate("/skill-assessment", {
+        state: {
+          skills: formData.skills,
+        },
+      })
     } catch (error) {
       toast({
         title: "Submission Failed",
@@ -284,7 +298,7 @@ const InputDetails = () => {
                       <span className="text-sm sm:text-base">Submitting...</span>
                     </>
                   ) : (
-                    <span className="text-sm sm:text-base">Continue to Upload Results</span>
+                    <span className="text-sm sm:text-base">Continue to Skill Assessment</span>
                   )}
                 </Button>
               </div>
