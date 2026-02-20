@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import SemesterResult, StudentProfile
+from .models import ProctoringEvent, SemesterResult, StudentProfile
 
 
 class StudentProfileSerializer(serializers.ModelSerializer):
@@ -17,3 +17,24 @@ class SemesterResultSerializer(serializers.ModelSerializer):
         model = SemesterResult
         fields = '__all__'
         read_only_fields = ('student',)
+
+
+class ProctoringEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProctoringEvent
+        fields = "__all__"
+        read_only_fields = (
+            "id",
+            "user",
+            "server_timestamp",
+            "ip_address",
+            "user_agent",
+            "suspicious_reasons",
+        )
+
+    def validate_metadata(self, value):
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("metadata must be an object.")
+        return value

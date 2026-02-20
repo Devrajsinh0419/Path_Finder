@@ -11,10 +11,17 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 import re
 
-from .models import SemesterResult, StudentProfile
-from .serializers import SemesterResultSerializer, StudentProfileSerializer
+from .models import ProctoringEvent, SemesterResult, StudentProfile
+from .serializers import ProctoringEventSerializer, SemesterResultSerializer, StudentProfileSerializer
 from apps.ml_engine.predictor import predict_domain
 from apps.academics.pdf_extractor import extract_grades_from_pdf
+
+
+def _get_client_ip(request):
+    forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
 
 
 class SemesterResultCreateView(generics.CreateAPIView):
@@ -57,6 +64,81 @@ class StudentProfileView(APIView):
         serializer.save(user=request.user)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProctoringEventView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ProctoringEventSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payload = serializer.validated_data
+
+        assessment_session_id = payload["assessment_session_id"]
+        event_type = payload["event_type"]
+        client_suspicious = bool(payload.get("suspicious", False))
+        device_fingerprint = (payload.get("device_fingerprint") or "").strip()[:128]
+        metadata = payload.get("metadata") or {}
+
+        ip_address = _get_client_ip(request)
+        user_agent = request.META.get("HTTP_USER_AGENT", "")[:500]
+
+        suspicious_reasons = []
+        previous_event = ProctoringEvent.objects.filter(
+            user=request.user,
+            assessment_session_id=assessment_session_id
+        ).first()
+
+        if previous_event:
+            if previous_event.ip_address and ip_address and previous_event.ip_address != ip_address:
+                suspicious_reasons.append("ip_changed_within_session")
+            if (
+                previous_event.device_fingerprint
+                and device_fingerprint
+                and previous_event.device_fingerprint != device_fingerprint
+            ):
+                suspicious_reasons.append("device_fingerprint_changed_within_session")
+
+        suspicious_event_types = {
+            "TAB_SWITCH",
+            "WINDOW_BLUR",
+            "ASSESSMENT_TERMINATED",
+            "COPY_BLOCKED",
+            "CUT_BLOCKED",
+            "PASTE_BLOCKED",
+            "CONTEXT_MENU_BLOCKED",
+            "SHORTCUT_BLOCKED",
+        }
+        if event_type in suspicious_event_types:
+            suspicious_reasons.append(f"event_type:{event_type.lower()}")
+        if not device_fingerprint:
+            suspicious_reasons.append("missing_device_fingerprint")
+
+        event = ProctoringEvent.objects.create(
+            user=request.user,
+            assessment_session_id=assessment_session_id,
+            assessment_skill=payload.get("assessment_skill", ""),
+            event_type=event_type,
+            suspicious=(client_suspicious or bool(suspicious_reasons)),
+            suspicious_reasons=suspicious_reasons,
+            client_timestamp=payload.get("client_timestamp"),
+            ip_address=ip_address,
+            user_agent=user_agent,
+            device_fingerprint=device_fingerprint,
+            metadata=metadata,
+        )
+
+        return Response(
+            {
+                "id": event.id,
+                "server_timestamp": event.server_timestamp,
+                "suspicious": event.suspicious,
+                "suspicious_reasons": event.suspicious_reasons,
+                "ip_address": event.ip_address,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class UploadResultPDFView(APIView):
