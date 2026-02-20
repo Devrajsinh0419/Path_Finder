@@ -647,11 +647,11 @@ const QUESTION_BANK: Record<SkillKey, Record<DifficultyLevel, Question[]>> = {
   },
 };
 
-function getPrimarySkill(skillText: string): string {
+function parseSkills(skillText: string): string[] {
   return skillText
-    .split(",")
+    .split(/[,;\n]+/)
     .map((item) => item.trim())
-    .find(Boolean) || "";
+    .filter(Boolean);
 }
 
 function resolveSkillKey(skillName: string): SkillKey {
@@ -681,23 +681,27 @@ function resolveSkillKey(skillName: string): SkillKey {
   return "programming";
 }
 
-function pickQuestion(skillKey: SkillKey, difficulty: DifficultyLevel, usedIds: string[]): Question {
-  const bank = QUESTION_BANK[skillKey];
-  const targetPool = bank[difficulty].filter((question) => !usedIds.includes(question.id));
+function pickQuestion(skillKeys: SkillKey[], difficulty: DifficultyLevel, usedIds: string[]): Question {
+  const targetPool = skillKeys
+    .flatMap((skillKey) => QUESTION_BANK[skillKey][difficulty])
+    .filter((question) => !usedIds.includes(question.id));
 
   if (targetPool.length > 0) {
     return targetPool[Math.floor(Math.random() * targetPool.length)];
   }
 
-  const fallbackPool = [...bank[1], ...bank[2], ...bank[3]].filter(
-    (question) => !usedIds.includes(question.id)
-  );
+  const fallbackPool = skillKeys
+    .flatMap((skillKey) => {
+      const bank = QUESTION_BANK[skillKey];
+      return [...bank[1], ...bank[2], ...bank[3]];
+    })
+    .filter((question) => !usedIds.includes(question.id));
 
   if (fallbackPool.length > 0) {
     return fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
   }
 
-  const reusablePool = bank[difficulty];
+  const reusablePool = skillKeys.flatMap((skillKey) => QUESTION_BANK[skillKey][difficulty]);
   return reusablePool[Math.floor(Math.random() * reusablePool.length)];
 }
 
@@ -715,8 +719,8 @@ const SkillAssessment = () => {
   const { toast } = useToast();
 
   const [skillsInput, setSkillsInput] = useState("");
-  const [activeSkillName, setActiveSkillName] = useState("");
-  const [activeSkillKey, setActiveSkillKey] = useState<SkillKey>("programming");
+  const [activeSkillNames, setActiveSkillNames] = useState<string[]>([]);
+  const [activeSkillKeys, setActiveSkillKeys] = useState<SkillKey[]>(["programming"]);
 
   const [loadingSkill, setLoadingSkill] = useState(true);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
@@ -732,18 +736,19 @@ const SkillAssessment = () => {
   const [finalResult, setFinalResult] = useState<FinalResult | null>(null);
 
   const progressValue = (questionNumber / TOTAL_QUESTIONS) * 100;
+  const activeSkillLabel = activeSkillNames.length > 0 ? activeSkillNames.join(", ") : "General Programming";
 
   const initializeAssessment = (skillText: string): boolean => {
-    const primarySkill = getPrimarySkill(skillText);
-    if (!primarySkill) {
+    const selectedSkills = parseSkills(skillText);
+    if (selectedSkills.length === 0) {
       return false;
     }
 
-    const skillKey = resolveSkillKey(primarySkill);
-    const firstQuestion = pickQuestion(skillKey, START_DIFFICULTY, []);
+    const skillKeys = Array.from(new Set(selectedSkills.map((skill) => resolveSkillKey(skill))));
+    const firstQuestion = pickQuestion(skillKeys, START_DIFFICULTY, []);
 
-    setActiveSkillName(primarySkill);
-    setActiveSkillKey(skillKey);
+    setActiveSkillNames(selectedSkills);
+    setActiveSkillKeys(skillKeys);
     setQuestionNumber(1);
     setDifficulty(START_DIFFICULTY);
     setHighestLevelReached(BASELINE_LEVEL);
@@ -803,7 +808,7 @@ const SkillAssessment = () => {
     setSavingResult(true);
     try {
       await api.post("/academics/student-profile/", {
-        assessment_skill: activeSkillName,
+        assessment_skill: activeSkillLabel.slice(0, 100),
         assessment_highest_level: highestLevel,
         assessment_level_label: levelInfo.value,
         assessment_accuracy: accuracy,
@@ -869,7 +874,7 @@ const SkillAssessment = () => {
       return;
     }
 
-    const nextQuestion = pickQuestion(activeSkillKey, nextDifficulty, answeredQuestions);
+    const nextQuestion = pickQuestion(activeSkillKeys, nextDifficulty, answeredQuestions);
 
     setUsedQuestionIds([...answeredQuestions, nextQuestion.id]);
     setDifficulty(nextDifficulty);
@@ -899,7 +904,7 @@ const SkillAssessment = () => {
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold mb-2">Assessment Result</h1>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Skill tested: <span className="font-semibold text-foreground">{activeSkillName}</span>
+              Skills tested: <span className="font-semibold text-foreground">{activeSkillLabel}</span>
             </p>
           </div>
 
@@ -971,7 +976,7 @@ const SkillAssessment = () => {
               className="h-11"
             />
             <p className="text-xs text-muted-foreground">
-              If multiple skills are entered, the first skill is used for this test.
+              If multiple skills are entered, questions are randomly selected across those skills.
             </p>
           </div>
 
@@ -990,7 +995,7 @@ const SkillAssessment = () => {
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">Adaptive Assessment</h1>
             <p className="text-sm text-muted-foreground">
-              Skill: <span className="font-semibold text-foreground">{activeSkillName}</span>
+              Skills: <span className="font-semibold text-foreground">{activeSkillLabel}</span>
             </p>
           </div>
           <div className="text-xs sm:text-sm px-3 py-1 rounded-full bg-accent/15 text-accent font-medium w-fit">
