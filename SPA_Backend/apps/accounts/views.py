@@ -9,6 +9,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics, status
+from firebase_admin import auth as firebase_auth
+from .models import User, UserProfile
 from .permissions import IsProfileCompleted
 from .serializers import ProfileCompletionSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -170,5 +172,80 @@ class UserProfileView(APIView):
         except Exception as e:
             return Response(
                 {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+class GoogleAuthView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """
+        Authenticate user with Firebase ID token
+        """
+        id_token = request.data.get('idToken')
+        
+        if not id_token:
+            return Response(
+                {'error': 'ID token is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Verify the Firebase ID token
+            decoded_token = firebase_auth.verify_id_token(id_token)
+            uid = decoded_token['uid']
+            email = decoded_token.get('email')
+            name = decoded_token.get('name', '')
+            
+            # Split name into first and last
+            name_parts = name.split(' ', 1)
+            first_name = name_parts[0] if name_parts else ''
+            last_name = name_parts[1] if len(name_parts) > 1 else ''
+            
+            # Check if user exists
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                # Create new user
+                user = User.objects.create_user(
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    role='student'
+                )
+                # Set unusable password for Google users
+                user.set_unusable_password()
+                user.save()
+                
+                # Create profile
+                UserProfile.objects.create(user=user)
+            
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'message': 'Authentication successful',
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'role': user.role,
+                },
+                'tokens': {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except firebase_auth.InvalidIdTokenError:
+            return Response(
+                {'error': 'Invalid ID token'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        except Exception as e:
+            print(f"Google auth error: {str(e)}")
+            return Response(
+                {'error': 'Authentication failed'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
