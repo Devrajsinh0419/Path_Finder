@@ -82,8 +82,6 @@ const Login = () => {
           {/* Overlay gradient */}
       <div className="absolute inset-0 bg-gradient-to-r from-background/10  via-transparent to-background/100" />
         
-        
-        
         <div className="relative z-10 flex flex-col items-start ut-2 justify-start pt-5 px-11">
           <Link to="/" className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
