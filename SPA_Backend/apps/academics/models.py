@@ -7,12 +7,28 @@ User = settings.AUTH_USER_MODEL
 
 
 class StudentProfile(models.Model):
+    ASSESSMENT_LEVEL_CHOICES = [
+        ("FOUNDATION", "Foundation"),
+        ("INTERMEDIATE", "Intermediate"),
+        ("ADVANCED", "Advanced"),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
     full_name = models.CharField(max_length=100, blank=True)
     enrollment_number = models.CharField(max_length=50, blank=True, null=True)
     institute_name = models.CharField(max_length=200, blank=True)
     current_semester = models.PositiveSmallIntegerField(blank=True, null=True)
     interests = models.TextField(blank=True)
+    assessment_skill = models.CharField(max_length=100, blank=True)
+    assessment_highest_level = models.PositiveSmallIntegerField(blank=True, null=True)
+    assessment_level_label = models.CharField(
+        max_length=20,
+        choices=ASSESSMENT_LEVEL_CHOICES,
+        blank=True
+    )
+    assessment_accuracy = models.PositiveSmallIntegerField(blank=True, null=True)
+    assessment_total_questions = models.PositiveSmallIntegerField(blank=True, null=True)
+    assessment_correct_answers = models.PositiveSmallIntegerField(blank=True, null=True)
 
     def __str__(self):
         return self.user.email
