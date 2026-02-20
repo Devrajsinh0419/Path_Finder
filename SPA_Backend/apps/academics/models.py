@@ -68,3 +68,42 @@ class Subject(models.Model):
     )
 
     weightage = models.FloatField()  # academic importance
+
+
+class ProctoringEvent(models.Model):
+    EVENT_TYPE_CHOICES = [
+        ("ASSESSMENT_STARTED", "Assessment Started"),
+        ("ANSWER_SUBMITTED", "Answer Submitted"),
+        ("TAB_SWITCH", "Tab Switch"),
+        ("WINDOW_BLUR", "Window Blur"),
+        ("COPY_BLOCKED", "Copy Blocked"),
+        ("CUT_BLOCKED", "Cut Blocked"),
+        ("PASTE_BLOCKED", "Paste Blocked"),
+        ("CONTEXT_MENU_BLOCKED", "Context Menu Blocked"),
+        ("SHORTCUT_BLOCKED", "Shortcut Blocked"),
+        ("ASSESSMENT_COMPLETED", "Assessment Completed"),
+        ("ASSESSMENT_TERMINATED", "Assessment Terminated"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="proctoring_events")
+    assessment_session_id = models.CharField(max_length=64, db_index=True)
+    assessment_skill = models.CharField(max_length=100, blank=True)
+    event_type = models.CharField(max_length=40, choices=EVENT_TYPE_CHOICES)
+    suspicious = models.BooleanField(default=False)
+    suspicious_reasons = models.JSONField(default=list, blank=True)
+    client_timestamp = models.DateTimeField(blank=True, null=True)
+    server_timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    user_agent = models.TextField(blank=True)
+    device_fingerprint = models.CharField(max_length=128, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-server_timestamp"]
+        indexes = [
+            models.Index(fields=["user", "assessment_session_id", "server_timestamp"]),
+            models.Index(fields=["suspicious", "server_timestamp"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user} | {self.event_type} | {self.server_timestamp.isoformat()}"
