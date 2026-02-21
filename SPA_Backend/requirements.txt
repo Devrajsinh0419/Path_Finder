@@ -17,8 +17,10 @@ scikit-learn
 joblib
 pandas
 scipy
+firebase-admin
 
 pdfplumber
 pdfminer.six
 
 requests
+
