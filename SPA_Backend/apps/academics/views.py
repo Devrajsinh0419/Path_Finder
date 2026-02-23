@@ -248,6 +248,18 @@ class UploadResultPDFView(APIView):
     
 class StudentAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
+    DOMAIN_KEYS = (
+        "frontend",
+        "backend",
+        "ai_ml",
+        "cybersecurity",
+        "data_science",
+        "mobile",
+        "devops",
+        "iot",
+        "blockchain",
+        "game_dev",
+    )
 
     def get(self, request):
         """Get student's results and analysis"""
@@ -307,8 +319,10 @@ class StudentAnalysisView(APIView):
                         'has_data': False
                     })
             
+            profile = StudentProfile.objects.filter(user=request.user).first()
+
             # Domain recommendation
-            domain_recommendation = self.analyze_domain(results)
+            domain_recommendation = self.analyze_domain(results, profile)
             
             return Response({
                 "has_results": True,
@@ -346,7 +360,31 @@ class StudentAnalysisView(APIView):
         else:
             return 'F'
     
-    def analyze_domain(self, results):
+    def _normalize_domain_scores(self, source_scores):
+        normalized = {key: 0.0 for key in self.DOMAIN_KEYS}
+        if not isinstance(source_scores, dict):
+            return normalized
+
+        for key in self.DOMAIN_KEYS:
+            value = source_scores.get(key, 0)
+            try:
+                numeric_value = float(value)
+            except (TypeError, ValueError):
+                numeric_value = 0.0
+            normalized[key] = max(0.0, min(100.0, numeric_value))
+
+        return normalized
+
+    def _blend_domain_scores(self, marks_map, assessment_map, has_assessment_data):
+        if not has_assessment_data:
+            return marks_map
+
+        blended = {}
+        for key in self.DOMAIN_KEYS:
+            blended[key] = round((marks_map[key] * 0.7) + (assessment_map[key] * 0.3), 2)
+        return blended
+
+    def analyze_domain(self, results, profile):
         """Analyze and recommend career domain based on ML prediction"""
         
         # Initialize subject category scores
@@ -404,10 +442,15 @@ class StudentAnalysisView(APIView):
         
         print(f"Marks map for prediction: {marks_map}")  # Debug log
         
-        # Use ML predictor
+        raw_assessment_scores = getattr(profile, "assessment_domain_scores", {}) if profile else {}
+        assessment_map = self._normalize_domain_scores(raw_assessment_scores)
+        has_assessment_data = any(score > 0 for score in assessment_map.values())
+        model_features = self._blend_domain_scores(marks_map, assessment_map, has_assessment_data)
+
+        # Use ML predictor with blended model inputs
         try:
             from apps.ml_engine.predictor import predict_domain
-            prediction, confidence = predict_domain(marks_map)
+            prediction, confidence = predict_domain(model_features)
             
             # Map ML prediction to display-friendly names
             domain_name_mapping = {
@@ -425,8 +468,15 @@ class StudentAnalysisView(APIView):
             
             recommended_domain = domain_name_mapping.get(prediction, 'Software Engineering')
             
-            # Create top domains list from marks_map
-            sorted_categories = sorted(marks_map.items(), key=lambda x: x[1], reverse=True)
+            # If model confidence is weak, rely on blended-score fallback.
+            if confidence < 35:
+                top_feature_score = max(model_features.values())
+                if top_feature_score > 0:
+                    prediction = max(model_features.items(), key=lambda item: item[1])[0]
+                    confidence = round(top_feature_score, 2)
+
+            # Create top domains list from blended domain scores
+            sorted_categories = sorted(model_features.items(), key=lambda x: x[1], reverse=True)
             top_domains = [
                 {
                     'domain': domain_name_mapping.get(cat, cat),
@@ -484,7 +534,10 @@ class StudentAnalysisView(APIView):
             'confidence': confidence,
             'top_domains': top_domains,
             'weak_areas': weak_areas,
-            'strong_subjects': [s.subject for s in strong_subjects]
+            'strong_subjects': [s.subject for s in strong_subjects],
+            'prediction_signals': {
+                'used_assessment_answers': has_assessment_data,
+            }
         }
 
 

@@ -29,6 +29,7 @@ class StudentProfile(models.Model):
     assessment_accuracy = models.PositiveSmallIntegerField(blank=True, null=True)
     assessment_total_questions = models.PositiveSmallIntegerField(blank=True, null=True)
     assessment_correct_answers = models.PositiveSmallIntegerField(blank=True, null=True)
+    assessment_domain_scores = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
         return self.user.email

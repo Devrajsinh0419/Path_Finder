@@ -11,6 +11,13 @@ class StudentProfileSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         return attrs
 
+    def validate_assessment_domain_scores(self, value):
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("assessment_domain_scores must be an object.")
+        return value
+
 
 class SemesterResultSerializer(serializers.ModelSerializer):
     class Meta:

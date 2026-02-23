@@ -20,11 +20,28 @@ type SkillKey =
   | "cybersecurity"
   | "programming";
 
-interface Question {
+type DomainKey =
+  | "frontend"
+  | "backend"
+  | "ai_ml"
+  | "cybersecurity"
+  | "data_science"
+  | "mobile"
+  | "devops"
+  | "iot"
+  | "blockchain"
+  | "game_dev";
+
+interface QuestionTemplate {
   id: string;
   prompt: string;
   options: string[];
   correctIndex: number;
+}
+
+interface Question extends QuestionTemplate {
+  skill: SkillKey;
+  difficulty: DifficultyLevel;
 }
 
 interface LevelInfo {
@@ -76,6 +93,36 @@ const LEVEL_MAP: Record<DifficultyLevel, LevelInfo> = {
   },
 };
 
+const DIFFICULTY_WEIGHT: Record<DifficultyLevel, number> = {
+  1: 1,
+  2: 1.25,
+  3: 1.5,
+};
+
+const EMPTY_DOMAIN_SCORES: Record<DomainKey, number> = {
+  frontend: 0,
+  backend: 0,
+  ai_ml: 0,
+  cybersecurity: 0,
+  data_science: 0,
+  mobile: 0,
+  devops: 0,
+  iot: 0,
+  blockchain: 0,
+  game_dev: 0,
+};
+
+const SKILL_TO_DOMAIN_WEIGHTS: Record<SkillKey, Partial<Record<DomainKey, number>>> = {
+  python: { ai_ml: 0.45, data_science: 0.35, backend: 0.2 },
+  java: { backend: 0.45, mobile: 0.3, devops: 0.25 },
+  c: { backend: 0.4, iot: 0.35, game_dev: 0.25 },
+  cpp: { game_dev: 0.45, iot: 0.3, backend: 0.25 },
+  web_dev: { frontend: 0.45, backend: 0.4, devops: 0.15 },
+  iot: { iot: 0.6, devops: 0.2, mobile: 0.2 },
+  cybersecurity: { cybersecurity: 0.7, devops: 0.15, backend: 0.15 },
+  programming: { backend: 0.4, ai_ml: 0.2, frontend: 0.2, devops: 0.2 },
+};
+
 function createAssessmentSessionId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -113,7 +160,7 @@ async function getDeviceFingerprint(): Promise<string> {
   return sha256Hex(rawFingerprint);
 }
 
-const QUESTION_BANK: Record<SkillKey, Record<DifficultyLevel, Question[]>> = {
+const QUESTION_BANK: Record<SkillKey, Record<DifficultyLevel, QuestionTemplate[]>> = {
   python: {
     1: [
       {
@@ -733,9 +780,21 @@ function resolveSkillKey(skillName: string): SkillKey {
   return "programming";
 }
 
+function withQuestionContext(
+  skill: SkillKey,
+  difficulty: DifficultyLevel,
+  question: QuestionTemplate
+): Question {
+  return { ...question, skill, difficulty };
+}
+
 function pickQuestion(skillKeys: SkillKey[], difficulty: DifficultyLevel, usedIds: string[]): Question {
   const targetPool = skillKeys
-    .flatMap((skillKey) => QUESTION_BANK[skillKey][difficulty])
+    .flatMap((skillKey) =>
+      QUESTION_BANK[skillKey][difficulty].map((question) =>
+        withQuestionContext(skillKey, difficulty, question)
+      )
+    )
     .filter((question) => !usedIds.includes(question.id));
 
   if (targetPool.length > 0) {
@@ -745,7 +804,11 @@ function pickQuestion(skillKeys: SkillKey[], difficulty: DifficultyLevel, usedId
   const fallbackPool = skillKeys
     .flatMap((skillKey) => {
       const bank = QUESTION_BANK[skillKey];
-      return [...bank[1], ...bank[2], ...bank[3]];
+      return [
+        ...bank[1].map((question) => withQuestionContext(skillKey, 1, question)),
+        ...bank[2].map((question) => withQuestionContext(skillKey, 2, question)),
+        ...bank[3].map((question) => withQuestionContext(skillKey, 3, question)),
+      ];
     })
     .filter((question) => !usedIds.includes(question.id));
 
@@ -753,8 +816,41 @@ function pickQuestion(skillKeys: SkillKey[], difficulty: DifficultyLevel, usedId
     return fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
   }
 
-  const reusablePool = skillKeys.flatMap((skillKey) => QUESTION_BANK[skillKey][difficulty]);
+  const reusablePool = skillKeys.flatMap((skillKey) =>
+    QUESTION_BANK[skillKey][difficulty].map((question) =>
+      withQuestionContext(skillKey, difficulty, question)
+    )
+  );
   return reusablePool[Math.floor(Math.random() * reusablePool.length)];
+}
+
+function buildAssessmentDomainScores(questions: Question[], correctFlags: boolean[]): Record<DomainKey, number> {
+  const scores = { ...EMPTY_DOMAIN_SCORES };
+  const weightTotals = { ...EMPTY_DOMAIN_SCORES };
+
+  questions.forEach((question, index) => {
+    const isCorrect = Boolean(correctFlags[index]);
+    const difficultyWeight = DIFFICULTY_WEIGHT[question.difficulty];
+    const correctnessWeight = isCorrect ? 1 : 0;
+    const skillDomainWeights = SKILL_TO_DOMAIN_WEIGHTS[question.skill];
+
+    Object.entries(skillDomainWeights).forEach(([domain, domainWeight]) => {
+      const domainKey = domain as DomainKey;
+      weightTotals[domainKey] += domainWeight * difficultyWeight;
+      scores[domainKey] += domainWeight * difficultyWeight * correctnessWeight;
+    });
+  });
+
+  (Object.keys(scores) as DomainKey[]).forEach((domain) => {
+    if (weightTotals[domain] <= 0) {
+      scores[domain] = 0;
+      return;
+    }
+
+    scores[domain] = Number(((scores[domain] / weightTotals[domain]) * 100).toFixed(2));
+  });
+
+  return scores;
 }
 
 interface FinalResult {
@@ -795,6 +891,8 @@ const SkillAssessment = () => {
   const assessmentSessionIdRef = useRef("");
   const deviceFingerprintRef = useRef("");
   const startedEventSessionRef = useRef("");
+  const answeredQuestionsRef = useRef<Question[]>([]);
+  const answerCorrectnessRef = useRef<boolean[]>([]);
 
   const progressValue = (questionNumber / TOTAL_QUESTIONS) * 100;
   const activeSkillLabel = activeSkillNames.length > 0 ? activeSkillNames.join(", ") : "General Programming";
@@ -871,6 +969,8 @@ const SkillAssessment = () => {
     terminatedRef.current = false;
     startedEventSessionRef.current = "";
     assessmentSessionIdRef.current = sessionId;
+    answeredQuestionsRef.current = [];
+    answerCorrectnessRef.current = [];
     setAssessmentStarted(true);
     return true;
   };
@@ -938,6 +1038,10 @@ const SkillAssessment = () => {
 
       setSavingResult(true);
       try {
+        const assessmentDomainScores = buildAssessmentDomainScores(
+          answeredQuestionsRef.current,
+          answerCorrectnessRef.current
+        );
         await api.post("/academics/student-profile/", {
           assessment_skill: activeSkillLabel.slice(0, 100),
           assessment_highest_level: BASELINE_LEVEL,
@@ -945,6 +1049,7 @@ const SkillAssessment = () => {
           assessment_accuracy: 0,
           assessment_total_questions: TOTAL_QUESTIONS,
           assessment_correct_answers: 0,
+          assessment_domain_scores: assessmentDomainScores,
         });
       } catch (error) {
         console.error("Failed to save terminated assessment:", error);
@@ -1110,6 +1215,10 @@ const SkillAssessment = () => {
 
     setSavingResult(true);
     try {
+      const assessmentDomainScores = buildAssessmentDomainScores(
+        answeredQuestionsRef.current,
+        answerCorrectnessRef.current
+      );
       await api.post("/academics/student-profile/", {
         assessment_skill: activeSkillLabel.slice(0, 100),
         assessment_highest_level: highestLevel,
@@ -1117,6 +1226,7 @@ const SkillAssessment = () => {
         assessment_accuracy: accuracy,
         assessment_total_questions: TOTAL_QUESTIONS,
         assessment_correct_answers: totalCorrect,
+        assessment_domain_scores: assessmentDomainScores,
       });
 
       toast({
@@ -1159,6 +1269,8 @@ const SkillAssessment = () => {
 
     const selectedIndex = Number(selectedAnswer);
     const isCorrect = selectedIndex === currentQuestion.correctIndex;
+    answeredQuestionsRef.current = [...answeredQuestionsRef.current, currentQuestion];
+    answerCorrectnessRef.current = [...answerCorrectnessRef.current, isCorrect];
     void logProctoringEvent("ANSWER_SUBMITTED", false, {
       question_number: questionNumber,
       difficulty,
