@@ -57,7 +57,12 @@ const Signup = () => {
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       
-      navigate('/input-details');
+      navigate('/input-details', {
+        state: {
+          firstName,
+          lastName,
+        },
+      });
     } catch (err: any) {
       if (err.response && err.response.data) {
         const errorData = err.response.data;
@@ -108,8 +113,13 @@ const Signup = () => {
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       
-      // Navigate to input details
-      navigate('/input-details');
+      // Navigate to input details with available name values
+      navigate('/input-details', {
+        state: {
+          firstName: response.data?.user?.first_name || result.user.displayName?.split(' ')[0] || '',
+          lastName: response.data?.user?.last_name || result.user.displayName?.split(' ').slice(1).join(' ') || '',
+        },
+      });
       
     } catch (err: any) {
       console.error('Google signup error:', err);
