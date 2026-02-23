@@ -1,6 +1,6 @@
 import { useToast } from "@/components/ui/use-toast";
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,14 @@ import heroBg from '@/assets/hero-bg.png';
 const InputDetails = () => {
   const { toast } = useToast()
   const navigate = useNavigate()
+  const location = useLocation()
+  const userFromStorage = localStorage.getItem("user")
+  const parsedUser = userFromStorage ? JSON.parse(userFromStorage) : null
+  const prefilledFirstName = location.state?.firstName || parsedUser?.first_name || ""
+  const prefilledLastName = location.state?.lastName || parsedUser?.last_name || ""
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    firstName: prefilledFirstName,
+    lastName: prefilledLastName,
     enrollmentNo: "",
     collegeName: "",
     semester: "",
