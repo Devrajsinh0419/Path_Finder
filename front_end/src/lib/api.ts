@@ -22,7 +22,7 @@ api.interceptors.response.use(
 
       try {
         const refreshResponse = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/auth/token/refresh/`,
+          `${import.meta.env.VITE_API_BASE_URL}/auth/refresh/`,
           { refresh }
         );
 

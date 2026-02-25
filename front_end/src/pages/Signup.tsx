@@ -26,26 +26,31 @@ const Signup = () => {
 
   const handleGoogleAuth = async () => {
   try {
-    console.log("Starting Google login...");
-
     const result = await signInWithPopup(auth, googleProvider);
-    console.log("Google result:", result);
-
     const idToken = await result.user.getIdToken();
-    console.log("ID Token:", idToken);
 
     const response = await api.post("/api/auth/google/", {
       token: idToken,
     });
 
-    console.log("Backend response:", response.data);
+    // ✅ Store tokens
+    localStorage.setItem("access_token", response.data.access);
+    localStorage.setItem("refresh_token", response.data.refresh);
 
-  } catch (error: any) {
-    console.error("FULL ERROR:", error);
-    console.error("Error response:", error.response);
+    // Optional: store user
+    localStorage.setItem("user", JSON.stringify(response.data.user));
+
+    // ✅ Redirect
+    if (response.data.is_new_user) {
+      window.location.href = "/input-details";
+    } else {
+      window.location.href = "/dashboard";
+    }
+
+  } catch (error) {
+    console.error("Google login error:", error);
   }
 };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreeTerms) {
