@@ -4,33 +4,43 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    // 🔥 CRITICAL FIX
-    if (config.data instanceof FormData) {
-      delete config.headers['Content-Type'];
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      const refresh = localStorage.getItem("refresh_token");
+
+      if (!refresh) {
+        localStorage.clear();
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
+
+      try {
+        const refreshResponse = await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/auth/token/refresh/`,
+          { refresh }
+        );
+
+        const newAccess = refreshResponse.data.access;
+
+        localStorage.setItem("access_token", newAccess);
+
+        originalRequest.headers.Authorization = `Bearer ${newAccess}`;
+
+        return api(originalRequest);
+
+      } catch (refreshError) {
+        localStorage.clear();
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
     }
+
     return Promise.reject(error);
   }
 );

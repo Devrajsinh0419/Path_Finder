@@ -24,6 +24,28 @@ const Signup = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const handleGoogleAuth = async () => {
+  try {
+    console.log("Starting Google login...");
+
+    const result = await signInWithPopup(auth, googleProvider);
+    console.log("Google result:", result);
+
+    const idToken = await result.user.getIdToken();
+    console.log("ID Token:", idToken);
+
+    const response = await api.post("/api/auth/google/", {
+      token: idToken,
+    });
+
+    console.log("Backend response:", response.data);
+
+  } catch (error: any) {
+    console.error("FULL ERROR:", error);
+    console.error("Error response:", error.response);
+  }
+};
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreeTerms) {
@@ -346,7 +368,7 @@ const Signup = () => {
                 variant="outline"
                 size="lg"
                 className="w-full h-11 sm:h-12 text-sm sm:text-base"
-                onClick={handleGoogleSignup}
+                onClick={handleGoogleAuth}
                 disabled={googleLoading || loading}
               >
                 {googleLoading ? (
