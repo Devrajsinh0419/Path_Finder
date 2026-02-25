@@ -11,6 +11,12 @@ from .serializers import ProfileCompletionSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 import logging
 from django.contrib.auth import get_user_model
+import firebase_admin
+from firebase_admin import credentials, auth as firebase_auth
+from .firebase import initialize_firebase
+
+initialize_firebase()
+
 
 logger = logging.getLogger(__name__)
 
