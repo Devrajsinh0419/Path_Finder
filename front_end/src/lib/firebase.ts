@@ -13,3 +13,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+import { setPersistence, browserLocalPersistence } from "firebase/auth";
+
+setPersistence(auth, browserLocalPersistence);
