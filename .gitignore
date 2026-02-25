@@ -2,3 +2,5 @@
 # DevContext - AI coding context
 .devctx/
 .venv/
+firebase-service-account.json
+SPA_Backend/firebase-service-account.json
