@@ -24,6 +24,33 @@ const Signup = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const handleGoogleAuth = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const idToken = await result.user.getIdToken();
+
+    const response = await api.post("/api/auth/google/", {
+      token: idToken,
+    });
+
+    // ✅ Store tokens
+    localStorage.setItem("access_token", response.data.access);
+    localStorage.setItem("refresh_token", response.data.refresh);
+
+    // Optional: store user
+    localStorage.setItem("user", JSON.stringify(response.data.user));
+
+    // ✅ Redirect
+    if (response.data.is_new_user) {
+      window.location.href = "/input-details";
+    } else {
+      window.location.href = "/dashboard";
+    }
+
+  } catch (error) {
+    console.error("Google login error:", error);
+  }
+};
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreeTerms) {
@@ -346,7 +373,7 @@ const Signup = () => {
                 variant="outline"
                 size="lg"
                 className="w-full h-11 sm:h-12 text-sm sm:text-base"
-                onClick={handleGoogleSignup}
+                onClick={handleGoogleAuth}
                 disabled={googleLoading || loading}
               >
                 {googleLoading ? (

@@ -1,6 +1,3 @@
-from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny
 from urllib3 import request
 from .serializers import RegisterSerializer, MyTokenObtainPairSerializer
@@ -10,11 +7,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics, status
 from firebase_admin import auth as firebase_auth
-from .models import User, UserProfile
 from .permissions import IsProfileCompleted
 from .serializers import ProfileCompletionSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 import logging
+from django.contrib.auth import get_user_model
+import firebase_admin
+from firebase_admin import credentials, auth as firebase_auth
+from .firebase import initialize_firebase
+
+initialize_firebase()
+
 
 logger = logging.getLogger(__name__)
 
@@ -175,77 +178,79 @@ class UserProfileView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
+User = get_user_model()
+
 class GoogleAuthView(APIView):
     permission_classes = [AllowAny]
-    
+    authentication_classes = []
+
     def post(self, request):
-        """
-        Authenticate user with Firebase ID token
-        """
-        id_token = request.data.get('idToken')
-        
-        if not id_token:
+        token = request.data.get("idToken") or request.data.get("token")
+
+        if not token:
             return Response(
-                {'error': 'ID token is required'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Google ID token is required"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         try:
-            # Verify the Firebase ID token
-            decoded_token = firebase_auth.verify_id_token(id_token)
-            uid = decoded_token['uid']
-            email = decoded_token.get('email')
-            name = decoded_token.get('name', '')
-            
-            # Split name into first and last
-            name_parts = name.split(' ', 1)
-            first_name = name_parts[0] if name_parts else ''
-            last_name = name_parts[1] if len(name_parts) > 1 else ''
-            
-            # Check if user exists
-            try:
-                user = User.objects.get(email=email)
-            except User.DoesNotExist:
-                # Create new user
-                user = User.objects.create_user(
-                    email=email,
-                    first_name=first_name,
-                    last_name=last_name,
-                    role='student'
+            decoded_token = firebase_auth.verify_id_token(token)
+
+            email = decoded_token.get("email")
+            name = decoded_token.get("name", "").strip()
+            name_parts = name.split()
+            first_name = name_parts[0] if name_parts else ""
+            last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+
+            if not email:
+                return Response(
+                    {"error": "Email not found in Google token"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-                # Set unusable password for Google users
-                user.set_unusable_password()
-                user.save()
-                
-                # Create profile
-                UserProfile.objects.create(user=user)
-            
-            # Generate JWT tokens
-            refresh = RefreshToken.for_user(user)
-            
-            return Response({
-                'message': 'Authentication successful',
-                'user': {
-                    'id': user.id,
-                    'email': user.email,
-                    'first_name': user.first_name,
-                    'last_name': user.last_name,
-                    'role': user.role,
-                },
-                'tokens': {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
+
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "role": "student",
                 }
-            }, status=status.HTTP_200_OK)
-            
-        except firebase_auth.InvalidIdTokenError:
-            return Response(
-                {'error': 'Invalid ID token'},
-                status=status.HTTP_401_UNAUTHORIZED
             )
+
+            # Backfill profile names for existing users if missing.
+            if not created:
+                updated = False
+                if first_name and not user.first_name:
+                    user.first_name = first_name
+                    updated = True
+                if last_name and not user.last_name:
+                    user.last_name = last_name
+                    updated = True
+                if updated:
+                    user.save(update_fields=["first_name", "last_name"])
+
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                "tokens": {
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                },
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "role": user.role,
+                },
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "is_new_user": created
+            })
+
         except Exception as e:
-            print(f"Google auth error: {str(e)}")
+            logger.exception("Google authentication failed")
             return Response(
-                {'error': 'Authentication failed'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": f"Invalid Google token: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
             )
